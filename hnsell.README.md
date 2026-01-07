@@ -4,6 +4,19 @@ A comprehensive GUI application for managing Handshake (HNS) domain CSV exports 
 
 *Voding [vibe-coding] by copilot[20251227]timaxal*
 
+## Credits & Origin
+
+**Forked from**: [Punytag](https://github.com/i1li/punytag) by [@i1li](https://github.com/i1li)
+
+Original Punytag functionality (Namebase/Bob Wallet punycode processing) has been expanded with:
+- Multi-platform support (Shakestation, Firewallet)
+- Language detection system (15+ languages/scripts)
+- Auto-generated descriptions and categorization
+- HTML portfolio generator with advanced filtering
+- Comprehensive GUI interface (tkinter + wxPython)
+
+Core punycode validation logic remains based on @i1li's original implementation.
+
 ## Features
 
 ### 3-Tab Interface
