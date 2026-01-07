@@ -1,0 +1,11 @@
+# Requirements for puny2uni2.py - Punycode/Unicode Converter with Translation
+# Install with: pip install -r requirements_puny2uni2.txt
+
+# Core dependencies
+idna>=3.6                    # Punycode encoding/decoding
+pandas>=2.2.0                # CSV processing for HNS platform exports
+deep-translator>=1.11.4      # Google Translate API wrapper (free)
+
+# Alternative translation libraries (optional):
+# googletrans==4.0.0-rc1     # Alternative Google Translate wrapper
+# translators>=5.8.9         # Multiple translation services support
