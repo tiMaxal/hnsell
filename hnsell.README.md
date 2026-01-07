@@ -9,6 +9,7 @@ A comprehensive GUI application for managing Handshake (HNS) domain CSV exports 
 ### 3-Tab Interface
 
 #### Tab 1: Punytag Processor
+
 - **Multi-Source Support**: Automatically processes CSV files from:
   - Bob Wallet (transaction history and TLD exports)
   - Namebase.io (transaction history and domain exports)
@@ -26,33 +27,40 @@ A comprehensive GUI application for managing Handshake (HNS) domain CSV exports 
   - Automatic date stamping (yyyymmdd)
 
 #### Tab 2: Puny ⟷ Unicode Converter
+
 - **Bidirectional Conversion**: Convert between Punycode and Unicode
-- **Multiple Format Support**:
-  - TXT files: Pure conversion based on content detection
-  - CSV files: Bob-TLD format with single column
+- **Text File Processing**: Works exclusively with .txt files (one domain per line)
 - **Batch Processing**: Convert multiple files at once
+- **Automatic Detection**: Detects direction based on first line (xn-- prefix = punycode to unicode)
 
 #### Tab 3: PageMaker
+
 - **HTML Portfolio Generation**: Create beautiful portfolio pages from domain lists
-- **Multi-Source Compilation**: Combine domains from Namebase and Shakestation
+- **Multi-Source Compilation**: Combine domains from Namebase, Shakestation, and non-custodial wallets (Firewallet or Bob exports)
 - **Smart Linking**: Automatically links to appropriate marketplace:
-  - https://www.namebase.io/domains/[tld]
-  - https://shakestation.io/domain/[tld]
+  - <https://www.namebase.io/domains/[tld>]
+  - <https://shakestation.io/domain/[tld>]
+  - Or displays personal email for non-custodial wallet domains
 - **For-Sale Filter**: Only includes Shakestation domains marked 'for_sale=TRUE'
-- **Flexible Sorting**: 
+- **Flexible Sorting**:  
   - Random (default)
   - Alphabetical ascending
   - Alphabetical descending
+  - By price (low to high)
+  - By price (high to low)
   - Cycle through options with Sort button
+- **Tag-Based Navigation**: Name-type selection buttons automatically added when file is processed with Punytag Processor (3D, 3L, PUNY_IDNA, language tags, etc.)
 - **Customization Options**:
   - Optional footer HTML
   - Optional credits HTML
+  - Theme selection (dark+light, 3-way switch, custom CSS)
 - **Update Existing Pages**: Add or remove domains from existing portfolio HTML
-- **Responsive Design**: Dark/light mode toggle, zoom controls, search functionality
+- **Responsive Design**: Dark/light mode toggle, zoom controls, search functionality with price filtering
 
 ## Installation
 
 ### Requirements
+
 - Python 3.7+
 - Required packages (install via pip):
 
@@ -61,6 +69,7 @@ pip install -r requirements.txt
 ```
 
 Required packages:
+
 - pandas==2.2.0
 - idna==3.6
 - regex==2023.12.25
@@ -97,29 +106,38 @@ python hnsell.py
 
 ### Converting Punycode (Tab 2)
 
-1. Click "Select Files" and choose .txt or .csv files
-2. Click the green "Process" button
-3. Converted files are saved with '_uni' or '_puny' suffix
+1. Click "Select Files" and choose .txt files (one domain per line)
+2. Files are automatically detected as puny→unicode (if starts with xn--) or unicode→puny
+3. Click the green "Process" button
+4. Converted files are saved with '_uni.txt' or '_puny.txt' suffix
 
 ### Creating Portfolio Pages (Tab 3)
 
 1. **Select Domain CSVs**:
-   - Click "Select CSV Files"
-   - Choose Namebase or Shakestation domain exports
+   - Click "Select C, Shakestation, Bob Wallet, or Firewallet domain exports
+   - For Bob/Firewallet: Add 'price' and 'email' columns for contact display
 
 2. **Configure Sorting** (optional):
    - Click "Sort TLDs" to cycle through sort options
-   - Random → Alphabetical ▲ → Alphabetical ▼
+   - Random → Alphabetical ▲ → Alphabetical ▼ → Price ▲ → Price ▼
 
-3. **Add Custom Content** (optional):
+3. **Select Theme** (optional):
+   - Dark + Light (default 2-way toggle)
+   - 3-Way Switch (Light → Dark → Black with custom colors)
+   - Custom CSS (load your own stylesheet)
+
+4. **Add Custom Content** (optional):
    - Select Footer HTML file
    - Select Credits HTML file
 
-4. **Set Output**:
+5. **Set Output**:
    - Enter desired filename (default: portfolio.html)
+   - Or click "Select Output File" to choose location
 
-5. **Generate**:
+6. **Generate**:
    - Click the green "Process" button
+   - HTML file is created with embedded styles and JavaScript
+   - Tag navigation automatically included if files processed with Punytag Processor
    - HTML file is created in the current directory
 
 ### Updating Existing Portfolios
@@ -146,16 +164,19 @@ The application automatically detects source formats based on CSV headers:
 - **Firewallet**: Other formats
 
 ## Output Files
+txt`
+- Unicode to Punycode:
 
-### Processed CSVs
 - Format: `original_name_YYYYMMDD.csv`
 - Original files renamed to: `original_name_orig.csv` (if option selected)
 
 ### Converted Files
+
 - Punycode to Unicode: `original_name_uni.csv` or `original_name_uni.txt`
 - Unicode to Punycode: `original_name_puny.csv` or `original_name_puny.txt`
 
 ### Portfolio HTML
+
 - User-defined filename (default: `portfolio.html`)
 - Includes embedded CSS and JavaScript
 - Responsive design with dark mode support
@@ -178,19 +199,23 @@ The processor adds tags to identify conversion methods:
 
 ## Generated Portfolio Features
 
-- **Dark/Light Mode**: Toggle with 🌙 / ☀️ button
+- **Dark/Light Mode**: Toggle with 🌙 / ☀️ button (or 3-way cycle with custom colors)
 - **Zoom Controls**: +/- buttons for text size
-- **Tag Navigation**: Click tags to filter domains
-- **Search Function**: Real-time domain search
-- **Random Colors**: Each link gets unique decoration color
-- **Tooltips**: Hover over truncated names to see full text
-- **External Links**: All domains link to their marketplace pages
+- **Tag Navigation**: Click tags to filter domains (3D, 3L, PUNY_IDNA, language tags, etc.)
+- **Search Function**: Real-time domain search with price range filtering
+- **Sort Options**: Random, A-Z, Z-A, Price Low-High, Price High-Low
+- **Email Copy**: Click 'eml' button to copy contact email to clipboard
+- **Smart Linking**: 
+  - Namebase/Shakestation domains link to marketplace
+  - Bob/Firewallet domains show price and email contact only
+- **Responsive Design**: Auto-adjusts for mobile/desktop
+- **Tooltips**: Hover over domain names to see full text
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"No module named 'tkinter'"**: 
+1. **"No module named 'tkinter'"**:
    - On Linux: `sudo apt-get install python3-tk`
    - On Mac: Tkinter should be included with Python
    - On Windows: Reinstall Python with tkinter option selected

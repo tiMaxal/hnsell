@@ -743,9 +743,6 @@ TAB 1: PUNYTAG PROCESSOR
 - Processes CSV exports from Bob Wallet, Namebase, Shakestation, and Firewallet
 - Automatically detects source format from CSV headers
 - Converts punycode domains to unicode with tagging
-- New columns (unicode, descript-IDNA, translate-IDNA, tags) are added at the END
-  of the CSV to preserve original column order
-- Shakestation compatibility: Original first 6 columns remain in place for upload updates
 - Options:
   • Select Files: Choose individual CSV files
   • Select Folder: Choose a folder (with optional recursive search)
@@ -756,28 +753,20 @@ TAB 1: PUNYTAG PROCESSOR
 
 TAB 2: PUNY ⟷ UNICODE
 - Converts between punycode and unicode formats
-- Supports .txt files ONLY (one domain per line)
-- Automatically detects conversion direction:
-  • If first line starts with 'xn--' → Punycode to Unicode
-  • Otherwise → Unicode to Punycode
-- Output files: original_name_uni.txt or original_name_puny.txt
+- Supports .txt and .csv files
+- TXT files: Pure conversion based on content
+- CSV files: Assumes Bob-TLD format with single column
 
 TAB 3: PAGEMAKER
 - Generates HTML portfolio pages from domain CSV files
 - Features:
-  • Select CSV files from Namebase, Shakestation, Bob Wallet, or Firewallet
-  • Sort TLDs: Cycles through Random → A-Z ▲ → Z-A ▼ → Price ▲ → Price ▼
-  • Theme Options: Dark+Light toggle, 3-way switch (custom colors), or Custom CSS
+  • Select CSV files from Namebase or Shakestation
+  • Sort TLDs: Cycles through Random → Alphabetical ▲ → Alphabetical ▼
   • Optional footer and credits HTML files
   • Update existing HTML: Add/remove domains from existing page
   • For Shakestation: Only includes domains marked 'for_sale=TRUE'
-  • Smart Linking:
-    - Namebase/Shakestation domains → Link to marketplace
-    - Bob/Firewallet domains → Display contact info (price + email)
-  • Tag Navigation: Automatically generated from Punytag processed files
-    (3D, 3L, PUNY_IDNA, language tags, etc.)
-  • Search with price range filtering
-  • Email copy button for easy contact
+  • Links point to appropriate marketplace (Namebase or Shakestation)
+  • Bob/Firewallet: Displays contact info (no marketplace links)
 
 ADDING PRICE/EMAIL COLUMNS:
 To add pricing and contact info to Bob Wallet or Firewallet CSVs:
@@ -900,9 +889,6 @@ OUTPUT:
         if not domain_col:
             raise ValueError("No 'domain' column found in Shakestation CSV")
         
-        # Store original columns order
-        original_cols = df.columns.tolist()
-        
         punycode_info = df[domain_col].apply(lambda x: self.punycode_convert_validate(x) if isinstance(x, str) else ('', ''))
         
         df['unicode'] = [re.sub(r'(?:\\x[\da-fA-F]{2})+|\\u(?:[\da-fA-F]{4})+', '', info[0]) if info[0] and info[0] != df.at[i, domain_col] else '' for i, info in enumerate(punycode_info)]
@@ -926,9 +912,7 @@ OUTPUT:
         df['descript-IDNA'] = [self.generate_description(df.at[i, 'unicode'], info[1]) for i, info in enumerate(punycode_info)]
         df['translate-IDNA'] = ''
         
-        # Preserve original column order, append new columns at end
-        new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
-        col_order = original_cols + [col for col in new_cols if col not in original_cols]
+        col_order = [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags'] + [col for col in df.columns if col not in [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
         df = df[col_order]
         
         df.to_csv(output_path, index=False)
@@ -948,9 +932,6 @@ OUTPUT:
         if not domain_col:
             raise ValueError("No 'domain' column found in Shakestation TR CSV")
         
-        # Store original columns order
-        original_cols = df.columns.tolist()
-        
         punycode_info = df[domain_col].apply(lambda x: self.punycode_convert_validate(x) if isinstance(x, str) else ('', ''))
         
         df['unicode'] = [re.sub(r'(?:\\x[\da-fA-F]{2})+|\\u(?:[\da-fA-F]{4})+', '', info[0]) if info[0] and info[0] != df.at[i, domain_col] else '' for i, info in enumerate(punycode_info)]
@@ -974,9 +955,7 @@ OUTPUT:
         df['descript-IDNA'] = [self.generate_description(df.at[i, 'unicode'], info[1]) for i, info in enumerate(punycode_info)]
         df['translate-IDNA'] = ''
         
-        # Preserve original column order, append new columns at end
-        new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
-        col_order = original_cols + [col for col in new_cols if col not in original_cols]
+        col_order = [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags'] + [col for col in df.columns if col not in [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
         df = df[col_order]
         
         df.to_csv(output_path, index=False)
@@ -1655,7 +1634,6 @@ OUTPUT:
     <a href="https://www.namebase.io" target="_blank" rel="noreferrer">Namebase</a>
     <a href="https://shakestation.io" target="_blank" rel="noreferrer">ShakeStation</a>
     <a href="https://impervious.com/fingertip" target="_blank" rel="noreferrer">Fingertip</a>
-    <a href="https://git.woodburn.au/nathanwoodburn/firewalletbrowser" target="_blank" rel="noreferrer">Firewallet</a>
 </div>
 <div class="navigation-container">
 {navigation_links_html}

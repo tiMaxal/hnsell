@@ -23,15 +23,57 @@ class HNSellApp:
         # Create bottom buttons first so they claim their space
         self.create_bottom_buttons()
         
-        # Create notebook directly (no canvas wrapper)
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(fill='both', expand=True, padx=10, pady=(5, 5))
+        # Create canvas with scrollbar for notebook
+        canvas_frame = tk.Frame(root)
+        canvas_frame.pack(fill='both', expand=True, padx=10, pady=(5, 5))
+        
+        self.canvas = tk.Canvas(canvas_frame)
+        scrollbar = tk.Scrollbar(canvas_frame, orient='vertical', command=self.canvas.yview)
+        scrollable_frame = tk.Frame(self.canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        
+        self.canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        
+        self.canvas.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Bind mousewheel to scroll - use multiple strategies for reliability
+        def _on_mousewheel(event):
+            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.canvas.bind("<MouseWheel>", _on_mousewheel)
+        scrollable_frame.bind("<MouseWheel>", _on_mousewheel)
+        # Store reference for unbinding from listboxes later
+        self._on_mousewheel = _on_mousewheel
+        
+        # Then create notebook which will expand in remaining space
+        self.notebook = ttk.Notebook(scrollable_frame)
+        self.notebook.pack(fill='both', expand=True)
+        # Bind notebook to mousewheel
+        self.notebook.bind("<MouseWheel>", _on_mousewheel)
         
         self.create_punytag_tab()
         self.create_puny2uni_tab()
         self.create_pagemaker_tab()
         
         self.sort_state = 0
+        
+        # Force scrollregion update after all tabs are created
+        self.root.after(100, self.update_scrollregion)
+        self.root.after(500, self.update_scrollregion)
+        self.root.after(1000, self.update_scrollregion)
+    
+    def update_scrollregion(self, event=None):
+        """Update canvas scrollregion after widgets are rendered"""
+        def _update():
+            self.root.update_idletasks()
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        # Use after_idle to ensure all widget changes are processed
+        self.root.after_idle(_update)
     
     def is_emoji(self, char):
         """Check if character is an emoji"""
@@ -239,9 +281,11 @@ class HNSellApp:
         # Create PanedWindow for resizable file list
         paned = ttk.PanedWindow(tab, orient=tk.VERTICAL)
         paned.pack(fill='both', expand=True, padx=10, pady=5)
+        # Bind to update scrollregion when pane is resized
+        paned.bind('<ButtonRelease-1>', self.update_scrollregion)
         
         list_frame = tk.LabelFrame(paned, text="Selected Files", padx=10, pady=10)
-        paned.add(list_frame, weight=0)
+        paned.add(list_frame, weight=1)
         
         button_row = tk.Frame(list_frame)
         button_row.pack(fill='x', pady=5)
@@ -250,9 +294,8 @@ class HNSellApp:
         tk.Button(button_row, text="Remove Selected", bg="#ff6b6b", fg="white", command=self.remove_punytag_files).pack(side='left', padx=5)
         tk.Button(button_row, text="Clear All", bg="#ff8c00", fg="white", command=self.clear_all_files).pack(side='left', padx=5)
         
-        self.file_listbox_frame = tk.Frame(list_frame, height=200)
+        self.file_listbox_frame = tk.Frame(list_frame)
         self.file_listbox_frame.pack(fill='both', expand=True)
-        self.file_listbox_frame.pack_propagate(False)
         
         scrollbar = tk.Scrollbar(self.file_listbox_frame)
         scrollbar.pack(side='right', fill='y')
@@ -260,6 +303,9 @@ class HNSellApp:
         self.file_listbox = tk.Listbox(self.file_listbox_frame, selectmode='multiple', yscrollcommand=scrollbar.set)
         self.file_listbox.pack(side='left', fill='both', expand=True)
         scrollbar.config(command=self.file_listbox.yview)
+        
+        # Prevent listbox from capturing mousewheel - let canvas scroll instead
+        self.file_listbox.bind("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
         
         # Bind Del key to remove selected files
         self.file_listbox.bind('<Delete>', lambda e: self.remove_punytag_files())
@@ -280,7 +326,7 @@ class HNSellApp:
         
     def create_puny2uni_tab(self):
         tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="Puny to Unicode")
+        self.notebook.add(tab, text="Puny ⟷ Unicode")
         
         info_frame = tk.LabelFrame(tab, text="Convert between Punycode and Unicode", padx=10, pady=10)
         info_frame.pack(fill='both', expand=False, padx=10, pady=5)
@@ -301,6 +347,10 @@ class HNSellApp:
         # Create resizable file list section
         list_frame = tk.LabelFrame(tab, text="Selected Files", padx=10, pady=10)
         list_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        # Bind to update scrollregion when frame is resized
+        list_frame.bind('<Configure>', self.update_scrollregion)
+        # Bind to update scrollregion when frame is resized
+        list_frame.bind('<Configure>', self.update_scrollregion)
         
         button_row = tk.Frame(list_frame)
         button_row.pack(fill='x', pady=5)
@@ -315,6 +365,9 @@ class HNSellApp:
         self.puny2uni_listbox = tk.Listbox(list_frame, selectmode='multiple', yscrollcommand=scrollbar.set)
         self.puny2uni_listbox.pack(side='left', fill='both', expand=True)
         scrollbar.config(command=self.puny2uni_listbox.yview)
+        
+        # Prevent listbox from capturing mousewheel
+        self.puny2uni_listbox.bind("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
         
         # Bind Del key to remove selected files
         self.puny2uni_listbox.bind('<Delete>', lambda e: self.remove_puny2uni_files())
@@ -342,9 +395,11 @@ class HNSellApp:
         # Create PanedWindow for resizable file list
         paned = ttk.PanedWindow(tab, orient=tk.VERTICAL)
         paned.pack(fill='both', expand=True, padx=10, pady=5)
+        # Bind to update scrollregion when pane is resized
+        paned.bind('<ButtonRelease-1>', self.update_scrollregion)
         
         list_frame = tk.LabelFrame(paned, text="Selected CSV Files", padx=10, pady=10)
-        paned.add(list_frame, weight=0)  # Don't auto-expand
+        paned.add(list_frame, weight=1)
         
         button_row = tk.Frame(list_frame)
         button_row.pack(fill='x', pady=5)
@@ -355,12 +410,11 @@ class HNSellApp:
         tk.Button(button_row, text="Clear All", bg="#ff8c00", fg="white", 
                  command=self.clear_pagemaker_files).pack(side='left', padx=5)
         
-        scrollbar = tk.Scrollbar(list_frame)
-        scrollbar.pack(side='right', fill='y')
+        self.pagemaker_listbox = tk.Listbox(list_frame, selectmode='multiple')
+        self.pagemaker_listbox.pack(fill='both', expand=True, pady=5)
         
-        self.pagemaker_listbox = tk.Listbox(list_frame, selectmode='multiple', yscrollcommand=scrollbar.set)
-        self.pagemaker_listbox.pack(side='left', fill='both', expand=True)
-        scrollbar.config(command=self.pagemaker_listbox.yview)
+        # Prevent listbox from capturing mousewheel
+        self.pagemaker_listbox.bind("<MouseWheel>", lambda e: self.canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
         
         # Bind Del key to remove selected files
         self.pagemaker_listbox.bind('<Delete>', lambda e: self.remove_pagemaker_files())
@@ -368,8 +422,8 @@ class HNSellApp:
         self.pagemaker_files = []
         
         # Create container for remaining options
-        options_container = tk.Frame(tab)
-        options_container.pack(fill='x', padx=10, pady=5)
+        options_container = tk.Frame(paned)
+        paned.add(options_container, weight=0)
         
         sort_frame = tk.Frame(options_container)
         sort_frame.pack(fill='x', padx=0, pady=5)
@@ -743,9 +797,6 @@ TAB 1: PUNYTAG PROCESSOR
 - Processes CSV exports from Bob Wallet, Namebase, Shakestation, and Firewallet
 - Automatically detects source format from CSV headers
 - Converts punycode domains to unicode with tagging
-- New columns (unicode, descript-IDNA, translate-IDNA, tags) are added at the END
-  of the CSV to preserve original column order
-- Shakestation compatibility: Original first 6 columns remain in place for upload updates
 - Options:
   • Select Files: Choose individual CSV files
   • Select Folder: Choose a folder (with optional recursive search)
@@ -756,28 +807,20 @@ TAB 1: PUNYTAG PROCESSOR
 
 TAB 2: PUNY ⟷ UNICODE
 - Converts between punycode and unicode formats
-- Supports .txt files ONLY (one domain per line)
-- Automatically detects conversion direction:
-  • If first line starts with 'xn--' → Punycode to Unicode
-  • Otherwise → Unicode to Punycode
-- Output files: original_name_uni.txt or original_name_puny.txt
+- Supports .txt and .csv files
+- TXT files: Pure conversion based on content
+- CSV files: Assumes Bob-TLD format with single column
 
 TAB 3: PAGEMAKER
 - Generates HTML portfolio pages from domain CSV files
 - Features:
-  • Select CSV files from Namebase, Shakestation, Bob Wallet, or Firewallet
-  • Sort TLDs: Cycles through Random → A-Z ▲ → Z-A ▼ → Price ▲ → Price ▼
-  • Theme Options: Dark+Light toggle, 3-way switch (custom colors), or Custom CSS
+  • Select CSV files from Namebase or Shakestation
+  • Sort TLDs: Cycles through Random → Alphabetical ▲ → Alphabetical ▼
   • Optional footer and credits HTML files
   • Update existing HTML: Add/remove domains from existing page
   • For Shakestation: Only includes domains marked 'for_sale=TRUE'
-  • Smart Linking:
-    - Namebase/Shakestation domains → Link to marketplace
-    - Bob/Firewallet domains → Display contact info (price + email)
-  • Tag Navigation: Automatically generated from Punytag processed files
-    (3D, 3L, PUNY_IDNA, language tags, etc.)
-  • Search with price range filtering
-  • Email copy button for easy contact
+  • Links point to appropriate marketplace (Namebase or Shakestation)
+  • Bob/Firewallet: Displays contact info (no marketplace links)
 
 ADDING PRICE/EMAIL COLUMNS:
 To add pricing and contact info to Bob Wallet or Firewallet CSVs:
@@ -900,9 +943,6 @@ OUTPUT:
         if not domain_col:
             raise ValueError("No 'domain' column found in Shakestation CSV")
         
-        # Store original columns order
-        original_cols = df.columns.tolist()
-        
         punycode_info = df[domain_col].apply(lambda x: self.punycode_convert_validate(x) if isinstance(x, str) else ('', ''))
         
         df['unicode'] = [re.sub(r'(?:\\x[\da-fA-F]{2})+|\\u(?:[\da-fA-F]{4})+', '', info[0]) if info[0] and info[0] != df.at[i, domain_col] else '' for i, info in enumerate(punycode_info)]
@@ -926,9 +966,7 @@ OUTPUT:
         df['descript-IDNA'] = [self.generate_description(df.at[i, 'unicode'], info[1]) for i, info in enumerate(punycode_info)]
         df['translate-IDNA'] = ''
         
-        # Preserve original column order, append new columns at end
-        new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
-        col_order = original_cols + [col for col in new_cols if col not in original_cols]
+        col_order = [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags'] + [col for col in df.columns if col not in [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
         df = df[col_order]
         
         df.to_csv(output_path, index=False)
@@ -948,9 +986,6 @@ OUTPUT:
         if not domain_col:
             raise ValueError("No 'domain' column found in Shakestation TR CSV")
         
-        # Store original columns order
-        original_cols = df.columns.tolist()
-        
         punycode_info = df[domain_col].apply(lambda x: self.punycode_convert_validate(x) if isinstance(x, str) else ('', ''))
         
         df['unicode'] = [re.sub(r'(?:\\x[\da-fA-F]{2})+|\\u(?:[\da-fA-F]{4})+', '', info[0]) if info[0] and info[0] != df.at[i, domain_col] else '' for i, info in enumerate(punycode_info)]
@@ -974,9 +1009,7 @@ OUTPUT:
         df['descript-IDNA'] = [self.generate_description(df.at[i, 'unicode'], info[1]) for i, info in enumerate(punycode_info)]
         df['translate-IDNA'] = ''
         
-        # Preserve original column order, append new columns at end
-        new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
-        col_order = original_cols + [col for col in new_cols if col not in original_cols]
+        col_order = [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags'] + [col for col in df.columns if col not in [domain_col, 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
         df = df[col_order]
         
         df.to_csv(output_path, index=False)
@@ -1655,7 +1688,6 @@ OUTPUT:
     <a href="https://www.namebase.io" target="_blank" rel="noreferrer">Namebase</a>
     <a href="https://shakestation.io" target="_blank" rel="noreferrer">ShakeStation</a>
     <a href="https://impervious.com/fingertip" target="_blank" rel="noreferrer">Fingertip</a>
-    <a href="https://git.woodburn.au/nathanwoodburn/firewalletbrowser" target="_blank" rel="noreferrer">Firewallet</a>
 </div>
 <div class="navigation-container">
 {navigation_links_html}

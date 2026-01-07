@@ -756,28 +756,20 @@ TAB 1: PUNYTAG PROCESSOR
 
 TAB 2: PUNY ⟷ UNICODE
 - Converts between punycode and unicode formats
-- Supports .txt files ONLY (one domain per line)
-- Automatically detects conversion direction:
-  • If first line starts with 'xn--' → Punycode to Unicode
-  • Otherwise → Unicode to Punycode
-- Output files: original_name_uni.txt or original_name_puny.txt
+- Supports .txt and .csv files
+- TXT files: Pure conversion based on content
+- CSV files: Assumes Bob-TLD format with single column
 
 TAB 3: PAGEMAKER
 - Generates HTML portfolio pages from domain CSV files
 - Features:
-  • Select CSV files from Namebase, Shakestation, Bob Wallet, or Firewallet
-  • Sort TLDs: Cycles through Random → A-Z ▲ → Z-A ▼ → Price ▲ → Price ▼
-  • Theme Options: Dark+Light toggle, 3-way switch (custom colors), or Custom CSS
+  • Select CSV files from Namebase or Shakestation
+  • Sort TLDs: Cycles through Random → Alphabetical ▲ → Alphabetical ▼
   • Optional footer and credits HTML files
   • Update existing HTML: Add/remove domains from existing page
   • For Shakestation: Only includes domains marked 'for_sale=TRUE'
-  • Smart Linking:
-    - Namebase/Shakestation domains → Link to marketplace
-    - Bob/Firewallet domains → Display contact info (price + email)
-  • Tag Navigation: Automatically generated from Punytag processed files
-    (3D, 3L, PUNY_IDNA, language tags, etc.)
-  • Search with price range filtering
-  • Email copy button for easy contact
+  • Links point to appropriate marketplace (Namebase or Shakestation)
+  • Bob/Firewallet: Displays contact info (no marketplace links)
 
 ADDING PRICE/EMAIL COLUMNS:
 To add pricing and contact info to Bob Wallet or Firewallet CSVs:
