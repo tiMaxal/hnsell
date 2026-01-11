@@ -1,1 +1,14 @@
-csv-s\*\*.csv
+# Ignore all CSV files in csv-s/ subdirectories
+csv-s/**/*.csv
+# EXCEPT example files (explicitly allow these)
+!csv-s/**/EXAMPLE_*.csv
+
+# Ignore 'ai-hist'
+ai_hist_hnsell/*
+
+# EXCEPT 'legacy_punytag+pagemaker' directory
+!ai_hist_hnsell/legacy_punytag+pagemaker
+# and its contents
+!ai_hist_hnsell/legacy_punytag+pagemaker/**
+# and the specific markdown file
+!ai_hist_hnsell/ai-hist_hns-puny+pagemake.md

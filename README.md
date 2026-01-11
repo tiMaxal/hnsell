@@ -1,6 +1,6 @@
 # HNSell - Handshake Domain Manager
 
-A comprehensive GUI application for managing Handshake (HNS) domain CSV exports from multiple wallet sources.
+A comprehensive application suite for managing Handshake (HNS) domain CSV exports from multiple wallet sources, with punycode conversion, language detection, translation, and HTML portfolio generation.
 
 *Voding [vibe-coding] by copilot[20251227]timaxal*
 
@@ -10,18 +10,91 @@ A comprehensive GUI application for managing Handshake (HNS) domain CSV exports 
 
 Original Punytag functionality (Namebase/Bob Wallet punycode processing) has been expanded with:
 - Multi-platform support (Shakestation, Firewallet)
-- Language detection system (15+ languages/scripts)
+- Language detection system (20+ languages/scripts)
+- Translation integration (Google Translate API)
+- Data preservation logic (respect existing entries)
 - Auto-generated descriptions and categorization
 - HTML portfolio generator with advanced filtering
-- Comprehensive GUI interface (tkinter + wxPython)
+- Comprehensive GUI interface (wxPython primary, standalone tkinter tools)
 
 Core punycode validation logic remains based on @i1li's original implementation.
 
+## Version
+
+**v0.4.0** (January 11, 2026) - Major architectural reorganization and feature additions
+- Primary application: `hnsell.py` (wxPython - superior scrolling and performance)
+- Legacy version: `ai-hist_hnsell/hnsell.py.old2` (tkinter)
+- See [RELEASE_NOTES_v0.4.0.md](RELEASE_NOTES_v0.4.0.md) for complete migration details
+
+## Project Structure
+
+```
+hnsell[junct]/
+├── hnsell.py                    ← PRIMARY GUI (wxPython)
+├── requirements.txt
+├── RELEASE_NOTES_v0.4.0.md
+│
+├── pagemaker/                   ← Standalone HTML generator
+│   ├── pagemaker2.py
+│   └── pagemaker.README.md
+│
+├── puny2uni/                    ← Conversion tools
+│   ├── puny2uni2.py            (CLI)
+│   ├── puny2uni2gui.py         (GUI)
+│   ├── puny2uni2.README.md
+│   └── requirements_puny2uni2.txt
+│
+├── csv-s/                       ← Example CSV files
+│   └── **/EXAMPLE_*.csv        (only these tracked in git)
+│
+└── ai-hist_hnsell/              ← Historical versions
+    └── hnsell.py.old2          (legacy tkinter version)
+```
+
+## Applications Suite
+
+This project includes complementary applications for different workflows:
+
+### **1. hnsell.py** (Primary - wxPython GUI)
+Full-featured 3-tab interface for CSV processing, conversion, and HTML portfolio generation
+- **Best for**: Complete workflow from CSV import to portfolio generation
+- **GUI**: wxPython (superior PageMaker scrolling)
+- **Status**: Production ready v0.4.0
+
+### **2. pagemaker/pagemaker2.py** (Standalone)
+HTML portfolio generator with theme customization
+- **Best for**: Generating portfolios without full CSV processing pipeline
+- **GUI**: tkinter
+- **See**: [pagemaker/pagemaker.README.md](pagemaker/pagemaker.README.md)
+
+### **3. puny2uni/puny2uni2.py** (CLI)
+Command-line punycode/unicode converter with translation
+- **Best for**: Scripting, batch automation, single-domain conversion
+- **Interface**: CLI with interactive mode
+- **See**: [puny2uni/puny2uni2.README.md](puny2uni/puny2uni2.README.md)
+
+### **4. puny2uni/puny2uni2gui.py** (GUI)
+Graphical batch converter with CSV processing
+- **Best for**: Standalone conversion without full hnsell.py interface
+- **GUI**: tkinter
+
 ## Features
 
-### 3-Tab Interface
+## Key Features (v0.4.0)
 
-#### Tab 1: Punytag Processor
+### **New in v0.4.0**
+- ✅ **Respect Existing Entries**: Preserve manual edits during reprocessing (checkbox option)
+- ✅ **Translation Integration**: Google Translate API for PUNY_IDNA domains
+- ✅ **Enhanced Language Detection**: 20+ languages/scripts (CJK, Arabic, Hebrew, Cyrillic, Hawaiian, etc.)
+- ✅ **Smart Descriptions**: Emoji character names, language identification
+- ✅ **Project Reorganization**: Standalone tools in subdirectories
+- ✅ **Example CSV Files**: 11 generic examples (git-tracked, private CSVs excluded)
+
+### HNSell GUI (hnsell.py - wxPython)
+
+#### 3-Tab Interface
+
+##### Tab 1: Punytag Processor
 
 - **Multi-Source Support**: Automatically processes CSV files from:
   - Bob Wallet (transaction history and TLD exports)
@@ -33,6 +106,14 @@ Core punycode validation logic remains based on @i1li's original implementation.
 - **Batch Processing**: Select individual files or entire folders
 - **Recursive Search**: Option to search subdirectories for CSV files
 - **Smart Duplicate Prevention**: Skips already processed files
+- **Data Preservation** (New in v0.4.0):
+  - Respect existing entries checkbox (default: checked)
+  - Skips domains with existing descript-IDNA or translate-IDNA values
+  - Prevents overwriting manual edits during reprocessing
+- **Translation Support** (New in v0.4.0):
+  - Optional Google Translate API integration
+  - Target language selection (en, es, fr, de, ja, zh-CN, etc.)
+  - Requires `deep-translator` package (graceful fallback if missing)
 - **Flexible Output Options**:
   - Rename originals with '_orig' suffix
   - Sort outputs to subdirectories by source
@@ -45,6 +126,74 @@ Core punycode validation logic remains based on @i1li's original implementation.
 - **Text File Processing**: Works exclusively with .txt files (one domain per line)
 - **Batch Processing**: Convert multiple files at once
 - **Automatic Detection**: Detects direction based on first line (xn-- prefix = punycode to unicode)
+
+### Puny2uni2 CLI (puny2uni2.py)
+
+Standalone command-line tool for advanced punycode conversion with translation support.
+
+**Features**:
+- Single domain conversion
+- Batch file processing (.txt and .csv)
+- Automatic language detection (50+ languages including CJK, Arabic, Hebrew, Russian, Greek, Thai, Hindi, Hawaiian, etc.)
+- Translation to 100+ languages via Google Translate (requires deep-translator)
+- Interactive mode for exploratory conversion
+- CSV processing with respect for existing values
+- Validation level tagging (PUNY_IDNA, PUNY_ALT, PUNY_INVALID)
+
+**Usage Examples**:
+```bash
+# Convert single domain
+python puny2uni2.py xn--wgv71a
+
+# Convert with translation
+python puny2uni2.py xn--wgv71a --translate
+
+# Process text file
+python puny2uni2.py domains.txt
+
+# Process CSV with translation
+python puny2uni2.py domains.csv -t -l es
+
+# Override existing values in CSV
+python puny2uni2.py domains.csv -t --override
+
+# Interactive mode
+python puny2uni2.py -i
+```
+
+**CSV Processing Options**:
+- `--translate` or `-t`: Enable translation
+- `--lang XX` or `-l XX`: Set target language (default: en)
+- `--override`: Re-process domains even if they have existing descript/translate values
+- Default behavior: Respects existing entries to preserve manual edits
+
+### Puny2uni2 GUI (puny2uni2gui.py)
+
+Graphical interface for puny2uni2 with three tabs:
+
+**Tab 1: Single Convert**:
+- Live single domain conversion
+- Real-time translation (optional)
+- Shows validation level and detected language
+- Copy result to clipboard
+
+**Tab 2: Batch TXT Files**:
+- Process multiple .txt files at once
+- Recursive folder scanning
+- Progress tracking with translation counter
+- Creates `_uni.txt` or `_puny.txt` output files
+
+**Tab 3: CSV Files**:
+- Auto-detects CSV format (Bob, Namebase, Shakestation, Firewallet)
+- Adds unicode, descript-IDNA, and translate-IDNA columns
+- **Respects existing entries** by default (checkbox option)
+- Uncheck to override and re-process all domains
+- Progress window with translation counter
+
+**Usage**:
+```bash
+python puny2uni2gui.py
+```
 
 #### Tab 3: PageMaker
 
@@ -74,25 +223,54 @@ Core punycode validation logic remains based on @i1li's original implementation.
 
 ### Requirements
 
-- Python 3.7+
-- Required packages (install via pip):
+- **Python 3.7+**
+- **Required packages**:
 
 ```bash
+# For HNSell GUI (hnsell.py)
 pip install -r requirements.txt
 ```
 
-Required packages:
+**Main Application Dependencies** (`requirements.txt`):
+- `wxPython` - GUI framework (PRIMARY)
+- `pandas>=2.2.0` - CSV processing
+- `idna>=3.6` - Punycode conversion
+- `deep-translator` - Translation (optional - graceful fallback)
 
-- pandas==2.2.0
-- idna==3.6
-- regex==2023.12.25
-- tkinter (usually included with Python)
+**Standalone Tools**:
+```bash
+# For puny2uni2 CLI/GUI
+pip install -r puny2uni/requirements_puny2uni2.txt
 
-### Running the Application
+# For pagemaker2 (uses system tkinter)
+pip install pandas idna
+```
+
+**Notes**:
+- `tkinter` usually included with Python (required for standalone tools)
+- `deep-translator` optional for translation features
+- On Linux: `sudo apt-get install python3-tk python3-wxgtk4.0`
+
+### Running the Applications
 
 ```bash
+# PRIMARY: HNSell full GUI (wxPython)
 python hnsell.py
+
+# Standalone PageMaker HTML generator
+python pagemaker/pagemaker2.py
+
+# Puny2uni2 CLI (with translation support)
+python puny2uni/puny2uni2.py -h
+
+# Puny2uni2 GUI (batch converter)
+python puny2uni/puny2uni2gui.py
+
+# Legacy tkinter version (if needed)
+python ai-hist_hnsell/hnsell.py.old2
 ```
+
+**Important**: Paths changed in v0.4.0 - standalone tools moved to subdirectories. See [RELEASE_NOTES_v0.4.0.md](RELEASE_NOTES_v0.4.0.md) for migration details.
 
 ## Usage Guide
 
@@ -108,6 +286,8 @@ python hnsell.py
    - Use "Select All" / "Select None" to manage selections
 
 3. **Configure Options**:
+   - ☑ **Respect existing entries** (default: checked) - Preserves manual edits
+   - ☑ **Enable translations** (requires deep-translator) - Target language: en, es, fr, etc.
    - ☑ Rename original files with '_orig' suffix
    - ☑ Sort processed files to subdirectories by source
    - ☑ Delete original files (use with caution!)
@@ -241,10 +421,22 @@ The processor adds tags to identify conversion methods:
    - Some punycode domains may be invalid
    - Check the PUNY_INVALID tag in output
 
+## Additional Documentation
+
+- **[RELEASE_NOTES_v0.4.0.md](RELEASE_NOTES_v0.4.0.md)** - Complete migration guide and feature list
+- **[pagemaker/pagemaker.README.md](pagemaker/pagemaker.README.md)** - Standalone PageMaker documentation
+- **[puny2uni/puny2uni2.README.md](puny2uni/puny2uni2.README.md)** - CLI converter documentation
+- **[hnsell.README.md](hnsell.README.md)** - hnsell.py-specific application guide
+
 ## Author
 
-Based on original punycode processing scripts by @i1li
+Based on original punycode processing scripts by [@i1li](https://github.com/i1li)
 
-## Version
+Expanded and maintained by timaxal
 
-1.0.0 - Initial GUI release (2025-12-26)
+## Version History
+
+- **v0.4.0** (2026-01-11) - Major architectural reorganization, translation support, data preservation
+- **v0.3.x** - Language detection, enhanced descriptions
+- **v0.2.x** - PageMaker integration, multi-source support
+- **v0.1.0** (2025-12-26) - Initial GUI release

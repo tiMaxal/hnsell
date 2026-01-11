@@ -1,21 +1,54 @@
-# HNSell - Handshake Domain Manager
+# HNSell GUI Application (hnsell.py)
 
-A comprehensive GUI application for managing Handshake (HNS) domain CSV exports from multiple wallet sources.
+**Primary wxPython GUI** for managing Handshake (HNS) domain CSV exports from multiple wallet sources.
+
+*This document covers the main hnsell.py application. For standalone tools, see [README.md](README.md)*
+
+## Version
+
+**v0.4.0** (January 11, 2026) - wxPython version with enhanced features
 
 *Voding [vibe-coding] by copilot[20251227]timaxal*
+
+## What's New in v0.4.0
+
+### **Data Preservation**
+- ✅ **Respect Existing Entries**: Checkbox option (default: checked) to preserve manual edits during reprocessing
+- Skips domains that already have `descript-IDNA`, `description`, or `translate-IDNA` values
+- Uncheck to override and re-process all domains
+- Shows skip counter: `ℹ Skipped {n} domains (already have descript/translate values)`
+
+### **Translation Integration**
+- ✅ **Google Translate API**: Optional translation of PUNY_IDNA unicode domains
+- Target language selection: en, es, fr, de, ja, zh-CN, etc.
+- Requires `deep-translator` package (graceful fallback if missing)
+- Adds `translate-IDNA` column to processed CSVs
+
+### **Enhanced Language Detection**
+- 20+ languages/scripts: CJK, Japanese, Arabic, Hebrew, Cyrillic, Greek, Thai, Hindi, Tamil, Malayalam, Georgian, Armenian, Hawaiian, European Latin Extended
+- Automatic language tagging in `tags` column
+- Smart emoji character name descriptions
+
+### **UI/UX Improvements**
+- Fully functional PageMaker tab scrolling (wxPython ScrolledPanel)
+- Better performance and native OS look-and-feel
+- Color-coded buttons for actions
+- Help text for new features
 
 ## Credits & Origin
 
 **Forked from**: [Punytag](https://github.com/i1li/punytag) by [@i1li](https://github.com/i1li)
 
-Original Punytag functionality (Namebase/Bob Wallet punycode processing) has been expanded with:
-- Multi-platform support (Shakestation, Firewallet)
-- Language detection system (15+ languages/scripts)
-- Auto-generated descriptions and categorization
-- HTML portfolio generator with advanced filtering
-- Comprehensive GUI interface (tkinter + wxPython)
-
 Core punycode validation logic remains based on @i1li's original implementation.
+
+## Application Architecture
+
+**GUI Framework**: wxPython (production version)
+- Superior PageMaker tab scrolling performance
+- Native OS look-and-feel (Windows/Linux/Mac)
+- Better responsive design for complex layouts
+
+**Note**: Legacy tkinter version available at `ai-hist_hnsell/hnsell.py.old2`
 
 ## Features
 
@@ -33,6 +66,17 @@ Core punycode validation logic remains based on @i1li's original implementation.
 - **Batch Processing**: Select individual files or entire folders
 - **Recursive Search**: Option to search subdirectories for CSV files
 - **Smart Duplicate Prevention**: Skips already processed files
+- **Data Preservation** (v0.4.0):
+  - **Respect existing entries** checkbox (default: checked)
+  - Skips domains with existing `descript-IDNA` or `translate-IDNA` values
+  - Prevents overwriting manual edits during reprocessing
+  - Uncheck to force re-processing (useful for language retargeting)
+- **Translation Support** (v0.4.0):
+  - **Enable translations** checkbox (requires `deep-translator`)
+  - Target language field (default: 'en')
+  - Supports 100+ languages: en, es, fr, de, ja, zh-CN, ar, he, ru, etc.
+  - Only applies to PUNY_IDNA tagged domains
+  - Adds `translate-IDNA` column to output CSV
 - **Flexible Output Options**:
   - Rename originals with '_orig' suffix
   - Sort outputs to subdirectories by source
@@ -74,19 +118,28 @@ Core punycode validation logic remains based on @i1li's original implementation.
 
 ### Requirements
 
-- Python 3.7+
+- **Python 3.7+**
+- **wxPython** (GUI framework)
 - Required packages (install via pip):
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Required packages:
+**Required packages** (`requirements.txt`):
+- `wxPython` - GUI framework (PRIMARY)
+- `pandas>=2.2.0` - CSV processing
+- `idna>=3.6` - Punycode conversion
 
-- pandas==2.2.0
-- idna==3.6
-- regex==2023.12.25
-- tkinter (usually included with Python)
+**Optional packages**:
+- `deep-translator` - Translation features (graceful fallback if missing)
+  - Install: `pip install deep-translator`
+  - If missing: Translation checkbox disabled with warning message
+
+**Platform-specific notes**:
+- **Windows**: wxPython installs via pip automatically
+- **Linux**: `sudo apt-get install python3-wxgtk4.0`
+- **Mac**: `pip install wxPython` (may require Xcode Command Line Tools)
 
 ### Running the Application
 
@@ -108,6 +161,11 @@ python hnsell.py
    - Use "Select All" / "Select None" to manage selections
 
 3. **Configure Options**:
+   - ☑ **Respect existing entries** (default: CHECKED) - Preserves manual edits to descript/translate columns
+     - ℹ Uncheck to override and re-process all domains (useful for re-translation)
+   - ☑ **Enable translations** (requires deep-translator)
+     - Target language: `en` (English), `es` (Spanish), `fr` (French), `de` (German), `ja` (Japanese), `zh-CN` (Chinese), etc.
+     - Only translates PUNY_IDNA domains with unicode values
    - ☑ Rename original files with '_orig' suffix
    - ☑ Sort processed files to subdirectories by source
    - ☑ Delete original files (use with caution!)
@@ -228,23 +286,48 @@ The processor adds tags to identify conversion methods:
 
 ### Common Issues
 
-1. **"No module named 'tkinter'"**:
-   - On Linux: `sudo apt-get install python3-tk`
-   - On Mac: Tkinter should be included with Python
-   - On Windows: Reinstall Python with tkinter option selected
+1. **"No module named 'wx'" or "No module named 'wxPython'"**:
+   - Install wxPython: `pip install wxPython`
+   - On Linux: `sudo apt-get install python3-wxgtk4.0`
+   - On Mac: May require Xcode Command Line Tools
+   - **Fallback**: Use legacy tkinter version at `ai-hist_hnsell/hnsell.py.old2`
 
-2. **CSV not detected correctly**:
+2. **Translation features disabled**:
+   - Install deep-translator: `pip install deep-translator`
+   - Requires internet connection for Google Translate API
+   - Translation checkbox will be enabled after installation
+
+3. **CSV not detected correctly**:
    - Check that CSV has proper headers
    - Verify file is valid CSV format
 
-3. **Punycode conversion errors**:
+4. **Punycode conversion errors**:
    - Some punycode domains may be invalid
    - Check the PUNY_INVALID tag in output
 
+## Related Documentation
+
+- **[README.md](README.md)** - Main project overview with all tools
+- **[RELEASE_NOTES_v0.4.0.md](RELEASE_NOTES_v0.4.0.md)** - Complete v0.4.0 feature list and migration guide
+- **[pagemaker/pagemaker.README.md](pagemaker/pagemaker.README.md)** - Standalone PageMaker documentation
+- **[puny2uni/puny2uni2.README.md](puny2uni/puny2uni2.README.md)** - CLI converter documentation
+
+## Standalone Tools
+
+For specific workflows, consider these standalone alternatives:
+- **PageMaker**: `pagemaker/pagemaker2.py` - HTML generation only
+- **Puny2Uni CLI**: `puny2uni/puny2uni2.py` - Command-line conversion with translation
+- **Puny2Uni GUI**: `puny2uni/puny2uni2gui.py` - Simple converter interface
+
 ## Author
 
-Based on original punycode processing scripts by @i1li
+Based on original punycode processing scripts by [@i1li](https://github.com/i1li)
 
-## Version
+Expanded and maintained by timaxal
 
-1.0.0 - Initial GUI release (2025-12-26)
+## Version History
+
+- **v0.4.0** (2026-01-11) - wxPython production version, translation support, data preservation, architectural reorganization
+- **v0.3.x** - Language detection, enhanced descriptions
+- **v0.2.x** - PageMaker integration, multi-source support  
+- **v0.1.0** (2025-12-26) - Initial GUI release (tkinter)

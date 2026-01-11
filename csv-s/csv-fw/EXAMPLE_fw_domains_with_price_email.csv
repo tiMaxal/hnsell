@@ -1,0 +1,11 @@
+name,expiry,state,value,price,email
+example,2025-12-31,REGISTERED,5.5,100,seller@example.com
+xn--e1afmkfd,2025-12-31,REGISTERED,7.25,250,seller@example.com
+testdomain,2025-11-30,REGISTERED,3.0,50,contact@domain.com
+xn--wgbh1c,2026-01-15,REGISTERED,10.0,500,owner@mail.com
+demo-name,2025-10-20,REGISTERED,4.5,75,demo@example.com
+myname,2025-12-01,REGISTERED,6.0,150,seller@example.com
+xn--mgbaam7a8h,2025-12-31,REGISTERED,8.0,300,seller@example.com
+blockchain,2026-03-15,REGISTERED,15.0,1000,premium@domains.com
+web3domain,2025-12-31,REGISTERED,12.0,200,seller@example.com
+xn--80akhbyknj4f,2026-02-10,REGISTERED,9.5,400,seller@example.com

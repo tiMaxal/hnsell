@@ -1,2 +1,4 @@
-idna>=3.6
+wxPython
 pandas>=2.2.0
+idna>=3.6
+deep-translator

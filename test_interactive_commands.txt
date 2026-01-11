@@ -1,9 +1,0 @@
-translate on
-xn--wgv71a
-xn--fiqs8s
-xn--80akhbyknj4f
-lang fr
-xn--mgbayh7gpa
-lang de
-xn--wgv71a
-quit

@@ -221,17 +221,41 @@ class Puny2UniConverter:
         if not TRANSLATION_AVAILABLE or not self.translator:
             return None
         
+        if not text or not text.strip():
+            return None
+        
+        # Skip translation if text is purely ASCII and looks like English
+        # But still allow translation of ASCII text that might be in other languages
+        if text.isascii() and len(text.split()) > 1:
+            # Check if it looks like English words
+            try:
+                # Try to detect if it's already English
+                test_translator = GoogleTranslator(source='auto', target='en')
+                test_result = test_translator.translate(text)
+                if test_result == text:
+                    return None  # Already in target language
+            except:
+                pass
+        
         try:
-            # Skip translation if already in English
-            if text.isascii():
-                return None
-            
             # Update target language
             self.translator.target = target_lang
             translated = self.translator.translate(text)
-            return translated
+            
+            # Return None if translation is the same as input
+            if translated and translated.strip() and translated != text:
+                return translated
+            return None
+            
         except Exception as e:
-            print(f"Translation error: {e}")
+            # Better error handling with specific messages
+            error_msg = str(e).lower()
+            if 'rate limit' in error_msg or 'quota' in error_msg:
+                print(f"⚠ Translation rate limit reached. Skipping translation.")
+            elif 'network' in error_msg or 'connection' in error_msg:
+                print(f"⚠ Network error during translation. Check connection.")
+            else:
+                print(f"⚠ Translation error: {e}")
             return None
     
     def generate_description(self, unicode_str, validation_tag):
@@ -302,11 +326,17 @@ class Puny2UniConverter:
             
             # Translate if requested
             if translate and detected_lang and validation == 'PUNY_IDNA':
+                if verbose:
+                    print(f"Translating to {target_lang}...", end=' ')
                 translation = self.translate_text(unicode_str, target_lang)
                 if translation:
                     result['translation'] = translation
                     if verbose:
+                        print(f"✓")
                         print(f"Translation ({target_lang}): {translation}")
+                else:
+                    if verbose:
+                        print(f"(skipped)")
             
             if verbose:
                 print(f"{'='*60}\n")
@@ -335,11 +365,17 @@ class Puny2UniConverter:
             
             # Translate if requested
             if translate and detected_lang:
+                if verbose:
+                    print(f"Translating to {target_lang}...", end=' ')
                 translation = self.translate_text(domain, target_lang)
                 if translation:
                     result['translation'] = translation
                     if verbose:
+                        print(f"✓")
                         print(f"Translation ({target_lang}): {translation}")
+                else:
+                    if verbose:
+                        print(f"(skipped)")
             
             if verbose:
                 print(f"{'='*60}\n")
@@ -383,11 +419,15 @@ class Puny2UniConverter:
         print(f"Direction: {direction}")
         if translate:
             print(f"Translation: enabled (target: {target_lang})")
+            if not TRANSLATION_AVAILABLE:
+                print(f"⚠ Translation not available (deep-translator not installed)")
+                translate = False
         print(f"Output: {output_path.name}\n")
         
         # Process all domains
         results = []
         translations = []
+        translation_count = 0
         
         for i, domain in enumerate(lines, 1):
             result = self.convert_domain(domain, translate=translate, target_lang=target_lang, verbose=False)
@@ -395,10 +435,14 @@ class Puny2UniConverter:
                 results.append(result['output'])
                 if result['translation']:
                     translations.append(f"{result['output']} | {result['translation']}")
+                    translation_count += 1
                 
-                # Show progress
+                # Show progress with translation count
                 if i % 10 == 0 or i == len(lines):
-                    print(f"Processed {i}/{len(lines)} domains...", end='\r')
+                    status = f"Processed {i}/{len(lines)} domains"
+                    if translate:
+                        status += f" | Translated: {translation_count}"
+                    print(f"{status}...", end='\r')
         
         print()  # New line after progress
         
@@ -420,8 +464,16 @@ class Puny2UniConverter:
             print(f"Error writing output file: {e}")
             return False
     
-    def process_csv(self, input_path, translate=False, target_lang='en', output_path=None):
-        """Process CSV file from HNS platforms with translation"""
+    def process_csv(self, input_path, translate=False, target_lang='en', output_path=None, respect_existing=True):
+        """Process CSV file from HNS platforms with translation
+        
+        Args:
+            input_path: Path to CSV file
+            translate: Enable translation
+            target_lang: Target language for translation
+            output_path: Custom output path (optional)
+            respect_existing: Skip domains that already have descript-IDNA/translate-IDNA values (default: True)
+        """
         if not CSV_AVAILABLE:
             print("Error: pandas not installed. Install with: pip install pandas")
             return False
@@ -467,6 +519,9 @@ class Puny2UniConverter:
         print(f"Processing {len(df)} rows from {input_path.name}")
         if translate:
             print(f"Translation: enabled (target: {target_lang})")
+            if not TRANSLATION_AVAILABLE:
+                print(f"⚠ Translation not available (deep-translator not installed)")
+                translate = False
         
         # Determine domain column based on source type
         domain_col = self._get_domain_column(df, source_type)
@@ -483,12 +538,24 @@ class Puny2UniConverter:
         
         # Check if already processed (has unicode column)
         already_processed = 'unicode' in df.columns
+        has_descript = 'descript-IDNA' in df.columns or 'description' in df.columns
+        has_translate = 'translate-IDNA' in df.columns
         
         if already_processed:
-            print("Note: CSV already has unicode column. Updating translations only.")
+            print("Note: CSV already has unicode column.")
+        
+        if respect_existing and (has_descript or has_translate):
+            print(f"Note: Respecting existing entries (respect_existing=True)")
+            print(f"      Only processing domains without descript-IDNA/translate-IDNA values")
+        else:
+            if not respect_existing:
+                print(f"Note: Override mode enabled (respect_existing=False)")
+                print(f"      Re-processing all domains regardless of existing values")
         
         # Process each domain
         results = []
+        translation_count = 0
+        skipped_count = 0
         for idx, row in df.iterrows():
             domain = row[domain_col]
             
@@ -511,6 +578,48 @@ class Puny2UniConverter:
                 })
                 continue
             
+            # Check if should skip this entry (respect_existing mode)
+            should_skip = False
+            if respect_existing:
+                # Check for existing descript-IDNA or description
+                existing_descript = ''
+                if 'descript-IDNA' in df.columns:
+                    existing_descript = str(row.get('descript-IDNA', '')).strip()
+                elif 'description' in df.columns:
+                    existing_descript = str(row.get('description', '')).strip()
+                
+                # Check for existing translate-IDNA
+                existing_translate = ''
+                if 'translate-IDNA' in df.columns:
+                    existing_translate = str(row.get('translate-IDNA', '')).strip()
+                
+                # Skip if either field has content (not empty, not 'nan')
+                if existing_descript and existing_descript.lower() != 'nan':
+                    should_skip = True
+                elif translate and existing_translate and existing_translate.lower() != 'nan':
+                    should_skip = True
+            
+            if should_skip:
+                # Keep existing values
+                skipped_count += 1
+                existing_unicode = str(row.get('unicode', '')).strip() if 'unicode' in df.columns else ''
+                existing_descript = str(row.get('descript-IDNA', row.get('description', ''))).strip()
+                existing_translate = str(row.get('translate-IDNA', '')).strip()
+                
+                results.append({
+                    'unicode': existing_unicode if existing_unicode.lower() != 'nan' else '',
+                    'descript-IDNA': existing_descript if existing_descript.lower() != 'nan' else '',
+                    'translate-IDNA': existing_translate if existing_translate.lower() != 'nan' else ''
+                })
+                
+                # Show progress with skip count
+                if (idx + 1) % 10 == 0 or (idx + 1) == len(df):
+                    status = f"Processed {idx + 1}/{len(df)} domains | Skipped: {skipped_count}"
+                    if translate:
+                        status += f" | Translated: {translation_count}"
+                    print(f"{status}...", end='\r')
+                continue
+            
             # Convert domain
             result = self.convert_domain(domain, translate=translate, target_lang=target_lang, verbose=False)
             
@@ -522,6 +631,9 @@ class Puny2UniConverter:
                 # Clean up unicode string (remove escape sequences)
                 if unicode_val:
                     unicode_val = re.sub(r'(?:\\x[\da-fA-F]{2})+|\\u(?:[\da-fA-F]{4})+', '', unicode_val)
+                
+                if translation:
+                    translation_count += 1
                 
                 results.append({
                     'unicode': unicode_val if unicode_val != domain else '',
@@ -535,9 +647,12 @@ class Puny2UniConverter:
                     'translate-IDNA': ''
                 })
             
-            # Show progress
+            # Show progress with translation count
             if (idx + 1) % 10 == 0 or (idx + 1) == len(df):
-                print(f"Processed {idx + 1}/{len(df)} domains...", end='\r')
+                status = f"Processed {idx + 1}/{len(df)} domains"
+                if translate:
+                    status += f" | Translated: {translation_count}"
+                print(f"{status}...", end='\r')
         
         print()  # New line after progress
         
@@ -587,8 +702,13 @@ class Puny2UniConverter:
             print(f"\n✓ Translated CSV saved to: {output_path}")
             
             # Show summary
+            unicode_count = sum(1 for r in results if r['unicode'])
             translated_count = sum(1 for r in results if r['translate-IDNA'])
-            print(f"✓ Translated {translated_count} domains")
+            print(f"✓ Converted {unicode_count} punycode domains to unicode")
+            if translate:
+                print(f"✓ Successfully translated {translated_count} domains to {target_lang}")
+            if skipped_count > 0:
+                print(f"ℹ Skipped {skipped_count} domains (already have descript/translate values)")
             
             return True
         except Exception as e:
@@ -697,6 +817,7 @@ Examples:
     parser.add_argument('-t', '--translate', action='store_true', help='Enable translation')
     parser.add_argument('-l', '--lang', default='en', help='Target language for translation (default: en)')
     parser.add_argument('-o', '--output', help='Output file path (for file processing)')
+    parser.add_argument('--override', action='store_true', help='Override existing descript/translate values (CSV only, default: respect existing)')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 2.0')
     
     args = parser.parse_args()
@@ -725,7 +846,8 @@ Examples:
                 args.input,
                 translate=args.translate,
                 target_lang=args.lang,
-                output_path=args.output
+                output_path=args.output,
+                respect_existing=not args.override
             )
         else:
             # Process text file
