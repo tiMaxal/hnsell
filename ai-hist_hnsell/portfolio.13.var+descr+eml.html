@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 20px;
+}
+body.dark-mode {
+    background-color: #000000;
+    color: #ffffff;
+}
+.buttons-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+button {
+    padding: 8px 16px;
+    background-color: rgba(52, 4, 244, 0.2);
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5em;
+    padding: 0.5em;
+}
+.grid.list-view {
+    display: flex;
+    flex-direction: column;
+}
+.grid.list-view .col {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    max-width: 100%;
+}
+.grid.list-view .domain-with-contact {
+    flex-direction: row;
+    width: 100%;
+}
+.grid.list-view .domain-unicode {
+    display: inline;
+    margin-right: 0.3em;
+}
+.grid.list-view .domain-puny {
+    display: inline;
+    margin-right: 0.5em;
+}
+.grid.list-view .domain-contact {
+    display: inline-flex;
+    margin: 0 0.5em;
+}
+.grid.list-view .domain-descriptions {
+    margin-left: auto;
+    flex-direction: row;
+    text-align: right;
+}
+.col {
+    padding: 0.7em;
+    background-color: rgba(111, 111, 111, 0.1);
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    text-align: center;
+}
+body.hide-descriptions .domain-descriptions {
+    display: none;
+}
+.filter-controls {
+    margin: 10px 0;
+}
+#tag-filter {
+    padding: 8px;
+    margin: 0 5px;
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    background-color: rgba(52, 4, 244, 0.1);
+    color: inherit;
+    cursor: pointer;
+}
+.domain-with-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+}
+.domain-unicode {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.domain-puny {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+.domain-contact {
+    font-size: 0.9em;
+    display: flex;
+    gap: 0.5em;
+    justify-content: center;
+}
+.domain-descriptions {
+    font-size: 0.85em;
+    margin-top: 0.3em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+}
+.desc-text {
+    color: inherit;
+}
+.translate-text {
+    color: inherit;
+    opacity: 0.9;
+}
+
+.marketplace-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5em;
+    padding: 1em;
+    margin: 10px 0 20px 0;
+    flex-wrap: wrap;
+}
+.search-container {
+    display: flex;
+    gap: 0.5em;
+    padding: 1em;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.copy-email-btn {
+    padding: 0.2em 0.5em;
+    margin-left: 0.3em;
+    background-color: rgba(111, 111, 111, 0.15);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+</style>
+</head>
+<body>
+<div class="buttons-container">
+<div class="mode-toggle">
+    <button id="themeBtn" onclick="cycleTheme()">☀️ Light</button>
+</div>
+<div class="zoom-buttons">
+    <button id="zoom-out">-</button>
+    <button id="zoom-in">+</button>
+</div>
+<div class="sort-button">
+    <button id="sort-tlds">Sort TLDs</button>
+</div>
+<div class="view-toggle">
+    <button id="toggle-view">📊 Grid / 📋 List</button>
+</div>
+<div class="desc-toggle">
+    <button id="desc-toggle" onclick="toggleDescriptions()">Hide Descripts</button>
+</div>
+</div>
+<div class="marketplace-links">
+    <a href="https://shakeshift.com/names" target="_blank" rel="noreferrer">ShakeShift</a>
+    <a href="https://bobwallet.io" target="_blank" rel="noreferrer">bobWallet</a>
+    <a href="https://www.namebase.io" target="_blank" rel="noreferrer">Namebase</a>
+    <a href="https://shakestation.io" target="_blank" rel="noreferrer">ShakeStation</a>
+    <a href="https://impervious.com/fingertip" target="_blank" rel="noreferrer">Fingertip</a>
+    <a href="https://git.woodburn.au/nathanwoodburn/firewalletbrowser" target="_blank" rel="noreferrer">Firewallet</a>
+</div>
+<div class="filter-controls">
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search names...">
+        <input type="number" id="min-price" placeholder="Min price" step="0.01">
+        <input type="number" id="max-price" placeholder="Max price" step="0.01">
+        <label for="tag-filter">Filter:</label>
+        <select id="tag-filter" onchange="filterDomainsWithPagination()"><option value="">All Names</option><option value="__NO_PUNY__">No PUNY</option><option disabled>───────────</option><option value="4L">4L</option><option value="CJK">CJK</option><option value="Cyrillic">Cyrillic</option><option value="Japanese">Japanese</option><option value="PUNY_IDNA">PUNY_IDNA</option></select>
+        <button id="clear-filters">Clear</button>
+        <label for="per-page" style="margin-left: 1em;">Per page:</label>
+        <select id="per-page">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="500">500</option>
+            <option value="all">All</option>
+        </select>
+    </div>
+    <div id="pagination-controls" style="text-align: center; padding: 0.5em;">
+        <button id="prev-page" disabled>← Prev</button>
+        <span id="page-info" style="margin: 0 1em;">Page 1</span>
+        <button id="next-page">Next →</button>
+    </div>
+</div>
+<div class="content">
+    <div class="grid"><div class="col"><span class="domain-with-contact" data-price="1.0" data-email="name+tozrht@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">tozrht</div><div class="domain-contact">💰 1.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+tozrht@domain.tld')" title="Copy name+tozrht@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="1.0" data-email="name+hrothzt@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">hrothzt</div><div class="domain-contact">💰 1.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+hrothzt@domain.tld')" title="Copy name+hrothzt@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="7.0" data-email="name+angleworm@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">angleworm</div><div class="domain-contact">💰 7.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+angleworm@domain.tld')" title="Copy name+angleworm@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--bh8ha96t@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🌞😎🌞</div><div class="domain-puny">xn--bh8ha96t</div><div class="domain-descriptions"><span class="desc-text">"SUN WITH FACE + SMILING FACE WITH SUNGLASSES + SUN WITH FACE"</span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--bh8ha96t@domain.tld')" title="Copy name+xn--bh8ha96t@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--moon@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">䕻䕴</div><div class="domain-puny">xn--moon</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-457B, CJK UNIFIED IDEOGRAPH-4574"</span> <span class="translate-text"><i>啻啴</i></span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--moon@domain.tld')" title="Copy name+xn--moon@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--good@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">䕰䕮</div><div class="domain-puny">xn--good</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-4570, CJK UNIFIED IDEOGRAPH-456E"</span> <span class="translate-text"><i>丰丮</i></span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--good@domain.tld')" title="Copy name+xn--good@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--timaxal@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">㬗㬟㬟㬗㬡</div><div class="domain-puny">xn--timaxal</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-3B17, CJK UNIFIED IDEOGRAPH-3B1F, CJK UNIFIED IDEOGRAPH-3B1F, CJK UNIFIED IDEOGRAPH-3B17, CJK UNIFIED IDEOGRAPH-3B21"</span> <span class="translate-text"><i>㬗㬟㬟㬗㬡</i></span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--timaxal@domain.tld')" title="Copy name+xn--timaxal@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+bamrush@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">bamrush</div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+bamrush@domain.tld')" title="Copy name+bamrush@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+throst@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">throst</div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+throst@domain.tld')" title="Copy name+throst@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--2p8h55h@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🪱👑</div><div class="domain-puny">xn--2p8h55h</div><div class="domain-descriptions"><span class="desc-text">"Letters + WORM, CROWN"</span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--2p8h55h@domain.tld')" title="Copy name+xn--2p8h55h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--qg8h71c@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">😋🌊</div><div class="domain-puny">xn--qg8h71c</div><div class="domain-descriptions"><span class="desc-text">"Letters + FACE SAVOURING DELICIOUS FOOD, WATER WAVE"</span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--qg8h71c@domain.tld')" title="Copy name+xn--qg8h71c@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--po8hib@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🐡🐵</div><div class="domain-puny">xn--po8hib</div><div class="domain-descriptions"><span class="desc-text">"Letters + BLOWFISH, MONKEY FACE"</span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--po8hib@domain.tld')" title="Copy name+xn--po8hib@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--mushroom@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">奴奮奪奺奼奷</div><div class="domain-puny">xn--mushroom</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>奴奮奪奺奼奷</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--mushroom@domain.tld')" title="Copy name+xn--mushroom@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--fish@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">埃垿</div><div class="domain-puny">xn--fish</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Aiyu</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--fish@domain.tld')" title="Copy name+xn--fish@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--mushrooms@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">奴奮奿奪奺奼奷</div><div class="domain-puny">xn--mushrooms</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>奴奮奿奪奺奼奷</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--mushrooms@domain.tld')" title="Copy name+xn--mushrooms@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+oldcute@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">oldcute</div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+oldcute@domain.tld')" title="Copy name+oldcute@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--iy8hj1d@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🤍🕸</div><div class="domain-puny">xn--iy8hj1d</div><div class="domain-descriptions"><span class="desc-text">"Letters + WHITE HEART, SPIDER WEB"</span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--iy8hj1d@domain.tld')" title="Copy name+xn--iy8hj1d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--7bi2588mba@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🔥✌🔥</div><div class="domain-puny">xn--7bi2588mba</div><div class="domain-descriptions"><span class="desc-text">"Letters + FIRE, VICTORY HAND, FIRE"</span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--7bi2588mba@domain.tld')" title="Copy name+xn--7bi2588mba@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--vpn@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">䃗</div><div class="domain-puny">xn--vpn</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-40D7"</span> <span class="translate-text"><i>烗</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--vpn@domain.tld')" title="Copy name+xn--vpn@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--w55l@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">𪞈</div><div class="domain-puny">xn--w55l</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-2A788"</span> <span class="translate-text"><i>𪞈</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--w55l@domain.tld')" title="Copy name+xn--w55l@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--kitty-7d34d@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">kitty😻</div><div class="domain-puny">xn--kitty-7d34d</div><div class="domain-descriptions"><span class="desc-text">"LATIN SMALL LETTER K + LATIN SMALL LETTER I + LATIN SMALL LETTER T + LATIN SMALL LETTER T + LATIN SMALL LETTER Y + SMILING CAT FACE WITH HEART-SHAPED EYES"</span> <span class="translate-text"><i>kitty😻</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--kitty-7d34d@domain.tld')" title="Copy name+xn--kitty-7d34d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--sdka1fb@domain.tld" data-tags="PUNY_IDNA,Japanese, All Names" data-puny="true"><div class="domain-unicode">フワフワ</div><div class="domain-puny">xn--sdka1fb</div><div class="domain-descriptions"><span class="desc-text">"Japanese"</span> <span class="translate-text"><i>Fluffy</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--sdka1fb@domain.tld')" title="Copy name+xn--sdka1fb@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--6r8hnw@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">😂💛</div><div class="domain-puny">xn--6r8hnw</div><div class="domain-descriptions"><span class="desc-text">"FACE WITH TEARS OF JOY + YELLOW HEART"</span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--6r8hnw@domain.tld')" title="Copy name+xn--6r8hnw@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+simpledish@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">simpledish</div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+simpledish@domain.tld')" title="Copy name+simpledish@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="111.0" data-email="name+kidsnames@domain.tld" data-tags="All Names" data-puny="false"><div class="domain-puny">kidsnames</div><div class="domain-contact">💰 111.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+kidsnames@domain.tld')" title="Copy name+kidsnames@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--xxif@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">⨇⨄</div><div class="domain-puny">xn--xxif</div><div class="domain-descriptions"><span class="desc-text">"Letters + TWO LOGICAL AND OPERATOR, N-ARY UNION OPERATOR WITH PLUS"</span> <span class="translate-text"><i>“Mu”</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--xxif@domain.tld')" title="Copy name+xn--xxif@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--f28h93c@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🤣😁</div><div class="domain-puny">xn--f28h93c</div><div class="domain-descriptions"><span class="desc-text">"Letters + ROLLING ON THE FLOOR LAUGHING, GRINNING FACE WITH SMILING EYES"</span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--f28h93c@domain.tld')" title="Copy name+xn--f28h93c@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--i18hb@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🗢🗡</div><div class="domain-puny">xn--i18hb</div><div class="domain-descriptions"><span class="desc-text">"Letters + LIPS, DAGGER KNIFE"</span> <span class="translate-text"><i>femme fatale</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--i18hb@domain.tld')" title="Copy name+xn--i18hb@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--4fiv938m@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">➕👑</div><div class="domain-puny">xn--4fiv938m</div><div class="domain-descriptions"><span class="desc-text">"Letters + HEAVY PLUS SIGN, CROWN"</span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--4fiv938m@domain.tld')" title="Copy name+xn--4fiv938m@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--cb7ba@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">침침</div><div class="domain-puny">xn--cb7ba</div><div class="domain-descriptions"><span class="desc-text">"Letters + HANGUL SYLLABLE CIM, HANGUL SYLLABLE CIM"</span> <span class="translate-text"><i>drooling</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--cb7ba@domain.tld')" title="Copy name+xn--cb7ba@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--80amepv@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">мираж</div><div class="domain-puny">xn--80amepv</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>a mirage</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80amepv@domain.tld')" title="Copy name+xn--80amepv@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--r0y@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">盷</div><div class="domain-puny">xn--r0y</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>緷</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--r0y@domain.tld')" title="Copy name+xn--r0y@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--hes@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">圵</div><div class="domain-puny">xn--hes</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>嵵</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--hes@domain.tld')" title="Copy name+xn--hes@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--formula@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">又变变叕収</div><div class="domain-puny">xn--formula</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Change and harvest again</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--formula@domain.tld')" title="Copy name+xn--formula@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--power@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">殿毇毁</div><div class="domain-puny">xn--power</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>The palace was destroyed</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--power@domain.tld')" title="Copy name+xn--power@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--8pvt78h@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">本革</div><div class="domain-puny">xn--8pvt78h</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>genuine leather</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--8pvt78h@domain.tld')" title="Copy name+xn--8pvt78h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--r0x@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">爮</div><div class="domain-puny">xn--r0x</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>爮</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--r0x@domain.tld')" title="Copy name+xn--r0x@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="555.0" data-email="name+xn--v4hw420o@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">☮💛</div><div class="domain-puny">xn--v4hw420o</div><div class="domain-descriptions"><span class="desc-text">"PEACE SYMBOL + YELLOW HEART"</span></div><div class="domain-contact">💰 555.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--v4hw420o@domain.tld')" title="Copy name+xn--v4hw420o@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="555.0" data-email="name+xn--6r8h0n@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">💛🕸</div><div class="domain-puny">xn--6r8h0n</div><div class="domain-descriptions"><span class="desc-text">"Letters + YELLOW HEART, SPIDER WEB"</span></div><div class="domain-contact">💰 555.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--6r8h0n@domain.tld')" title="Copy name+xn--6r8h0n@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="555.0" data-email="name+xn--sr8hf2f@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🥰💍</div><div class="domain-puny">xn--sr8hf2f</div><div class="domain-descriptions"><span class="desc-text">"Letters + SMILING FACE WITH SMILING EYES AND THREE HEARTS, RING"</span></div><div class="domain-contact">💰 555.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--sr8hf2f@domain.tld')" title="Copy name+xn--sr8hf2f@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--5h8hnq@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">👃🌼</div><div class="domain-puny">xn--5h8hnq</div><div class="domain-descriptions"><span class="desc-text">"Letters + NOSE, BLOSSOM"</span> <span class="translate-text"><i>smell the flowers</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--5h8hnq@domain.tld')" title="Copy name+xn--5h8hnq@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--n00b@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">끟</div><div class="domain-puny">xn--n00b</div><div class="domain-descriptions"><span class="desc-text">"Letters + HANGUL SYLLABLE GGEUH"</span> <span class="translate-text"><i>Wow</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--n00b@domain.tld')" title="Copy name+xn--n00b@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--nckh9tz79m@domain.tld" data-tags="PUNY_IDNA,Japanese, All Names" data-puny="true"><div class="domain-unicode">ケーキ屋</div><div class="domain-puny">xn--nckh9tz79m</div><div class="domain-descriptions"><span class="desc-text">"Japanese"</span> <span class="translate-text"><i>cake shop</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--nckh9tz79m@domain.tld')" title="Copy name+xn--nckh9tz79m@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80afpisy@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">готика</div><div class="domain-puny">xn--80afpisy</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>Gothic</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80afpisy@domain.tld')" title="Copy name+xn--80afpisy@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--d1aeyma@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">джосс</div><div class="domain-puny">xn--d1aeyma</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>joss</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--d1aeyma@domain.tld')" title="Copy name+xn--d1aeyma@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--j1aaclc@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">колко</div><div class="domain-puny">xn--j1aaclc</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>how much</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--j1aaclc@domain.tld')" title="Copy name+xn--j1aaclc@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80aa6ac2h@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">малая</div><div class="domain-puny">xn--80aa6ac2h</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>small</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80aa6ac2h@domain.tld')" title="Copy name+xn--80aa6ac2h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80afoini@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">никога</div><div class="domain-puny">xn--80afoini</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>never</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80afoini@domain.tld')" title="Copy name+xn--80afoini@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--m1abbj5a@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">сочно</div><div class="domain-puny">xn--m1abbj5a</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>juicy</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--m1abbj5a@domain.tld')" title="Copy name+xn--m1abbj5a@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--whr773l@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">通勤</div><div class="domain-puny">xn--whr773l</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>commute</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--whr773l@domain.tld')" title="Copy name+xn--whr773l@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--d4x91d@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">番犬</div><div class="domain-puny">xn--d4x91d</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>watchdog</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--d4x91d@domain.tld')" title="Copy name+xn--d4x91d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--x4w487d@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">混账</div><div class="domain-puny">xn--x4w487d</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Asshole</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--x4w487d@domain.tld')" title="Copy name+xn--x4w487d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--20t@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">引</div><div class="domain-puny">xn--20t</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>lead</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--20t@domain.tld')" title="Copy name+xn--20t@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="99999.0" data-email="name+xn--w4h6840o@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">☯🕉</div><div class="domain-puny">xn--w4h6840o</div><div class="domain-descriptions"><span class="desc-text">"Letters + YIN YANG, OM SYMBOL"</span></div><div class="domain-contact">💰 99999.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--w4h6840o@domain.tld')" title="Copy name+xn--w4h6840o@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="" data-tags="4L, All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/edqe">edqe</a></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="" data-tags="All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/holepower">holepower</a></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="" data-tags="All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/downthe-rabbithole">downthe-rabbithole</a></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="" data-tags="4L, All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/jawa">jawa</a></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="" data-tags="All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/abcdiners">abcdiners</a></div><div class="domain-contact">💰 22.0</div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="" data-tags="4L, All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/kwyt">kwyt</a></div><div class="domain-contact">💰 222.0</div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="" data-tags="4L, All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/edqe">edqe</a></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="" data-tags="4L, All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/jawa">jawa</a></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="" data-tags="4L, All Names" data-puny="false"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/kwyt">kwyt</a></div><div class="domain-contact">💰 222.0</div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--mushroom@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">奴奮奪奺奼奷</div><div class="domain-puny">xn--mushroom</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>奴奮奪奺奼奷</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--mushroom@domain.tld')" title="Copy name+xn--mushroom@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--fish@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">埃垿</div><div class="domain-puny">xn--fish</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Aiyu</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--fish@domain.tld')" title="Copy name+xn--fish@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--mushrooms@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">奴奮奿奪奺奼奷</div><div class="domain-puny">xn--mushrooms</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>奴奮奿奪奺奼奷</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--mushrooms@domain.tld')" title="Copy name+xn--mushrooms@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--r0y@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">盷</div><div class="domain-puny">xn--r0y</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>緷</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--r0y@domain.tld')" title="Copy name+xn--r0y@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--hes@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">圵</div><div class="domain-puny">xn--hes</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>嵵</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--hes@domain.tld')" title="Copy name+xn--hes@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--formula@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">又变变叕収</div><div class="domain-puny">xn--formula</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Change and harvest again</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--formula@domain.tld')" title="Copy name+xn--formula@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--power@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">殿毇毁</div><div class="domain-puny">xn--power</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>The palace was destroyed</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--power@domain.tld')" title="Copy name+xn--power@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--8pvt78h@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">本革</div><div class="domain-puny">xn--8pvt78h</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>genuine leather</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--8pvt78h@domain.tld')" title="Copy name+xn--8pvt78h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--r0x@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">爮</div><div class="domain-puny">xn--r0x</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>爮</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--r0x@domain.tld')" title="Copy name+xn--r0x@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--whr773l@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">通勤</div><div class="domain-puny">xn--whr773l</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>commute</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--whr773l@domain.tld')" title="Copy name+xn--whr773l@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--d4x91d@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">番犬</div><div class="domain-puny">xn--d4x91d</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>watchdog</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--d4x91d@domain.tld')" title="Copy name+xn--d4x91d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--x4w487d@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">混账</div><div class="domain-puny">xn--x4w487d</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Asshole</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--x4w487d@domain.tld')" title="Copy name+xn--x4w487d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--20t@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">引</div><div class="domain-puny">xn--20t</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>lead</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--20t@domain.tld')" title="Copy name+xn--20t@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--80amepv@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">мираж</div><div class="domain-puny">xn--80amepv</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>a mirage</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80amepv@domain.tld')" title="Copy name+xn--80amepv@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80afpisy@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">готика</div><div class="domain-puny">xn--80afpisy</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>Gothic</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80afpisy@domain.tld')" title="Copy name+xn--80afpisy@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--d1aeyma@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">джосс</div><div class="domain-puny">xn--d1aeyma</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>joss</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--d1aeyma@domain.tld')" title="Copy name+xn--d1aeyma@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--j1aaclc@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">колко</div><div class="domain-puny">xn--j1aaclc</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>how much</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--j1aaclc@domain.tld')" title="Copy name+xn--j1aaclc@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80aa6ac2h@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">малая</div><div class="domain-puny">xn--80aa6ac2h</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>small</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80aa6ac2h@domain.tld')" title="Copy name+xn--80aa6ac2h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80afoini@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">никога</div><div class="domain-puny">xn--80afoini</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>never</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80afoini@domain.tld')" title="Copy name+xn--80afoini@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--m1abbj5a@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">сочно</div><div class="domain-puny">xn--m1abbj5a</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>juicy</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--m1abbj5a@domain.tld')" title="Copy name+xn--m1abbj5a@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--sdka1fb@domain.tld" data-tags="PUNY_IDNA,Japanese, All Names" data-puny="true"><div class="domain-unicode">フワフワ</div><div class="domain-puny">xn--sdka1fb</div><div class="domain-descriptions"><span class="desc-text">"Japanese"</span> <span class="translate-text"><i>Fluffy</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--sdka1fb@domain.tld')" title="Copy name+xn--sdka1fb@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--nckh9tz79m@domain.tld" data-tags="PUNY_IDNA,Japanese, All Names" data-puny="true"><div class="domain-unicode">ケーキ屋</div><div class="domain-puny">xn--nckh9tz79m</div><div class="domain-descriptions"><span class="desc-text">"Japanese"</span> <span class="translate-text"><i>cake shop</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--nckh9tz79m@domain.tld')" title="Copy name+xn--nckh9tz79m@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--bh8ha96t@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🌞😎🌞</div><div class="domain-puny">xn--bh8ha96t</div><div class="domain-descriptions"><span class="desc-text">"SUN WITH FACE + SMILING FACE WITH SUNGLASSES + SUN WITH FACE"</span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--bh8ha96t@domain.tld')" title="Copy name+xn--bh8ha96t@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--moon@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">䕻䕴</div><div class="domain-puny">xn--moon</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-457B, CJK UNIFIED IDEOGRAPH-4574"</span> <span class="translate-text"><i>啻啴</i></span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--moon@domain.tld')" title="Copy name+xn--moon@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--good@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">䕰䕮</div><div class="domain-puny">xn--good</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-4570, CJK UNIFIED IDEOGRAPH-456E"</span> <span class="translate-text"><i>丰丮</i></span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--good@domain.tld')" title="Copy name+xn--good@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="11.0" data-email="name+xn--timaxal@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">㬗㬟㬟㬗㬡</div><div class="domain-puny">xn--timaxal</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-3B17, CJK UNIFIED IDEOGRAPH-3B1F, CJK UNIFIED IDEOGRAPH-3B1F, CJK UNIFIED IDEOGRAPH-3B17, CJK UNIFIED IDEOGRAPH-3B21"</span> <span class="translate-text"><i>㬗㬟㬟㬗㬡</i></span></div><div class="domain-contact">💰 11.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--timaxal@domain.tld')" title="Copy name+xn--timaxal@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--2p8h55h@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🪱👑</div><div class="domain-puny">xn--2p8h55h</div><div class="domain-descriptions"><span class="desc-text">"Letters + WORM, CROWN"</span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--2p8h55h@domain.tld')" title="Copy name+xn--2p8h55h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--qg8h71c@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">😋🌊</div><div class="domain-puny">xn--qg8h71c</div><div class="domain-descriptions"><span class="desc-text">"Letters + FACE SAVOURING DELICIOUS FOOD, WATER WAVE"</span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--qg8h71c@domain.tld')" title="Copy name+xn--qg8h71c@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--po8hib@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🐡🐵</div><div class="domain-puny">xn--po8hib</div><div class="domain-descriptions"><span class="desc-text">"Letters + BLOWFISH, MONKEY FACE"</span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--po8hib@domain.tld')" title="Copy name+xn--po8hib@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--mushroom@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">奴奮奪奺奼奷</div><div class="domain-puny">xn--mushroom</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>奴奮奪奺奼奷</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--mushroom@domain.tld')" title="Copy name+xn--mushroom@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--fish@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">埃垿</div><div class="domain-puny">xn--fish</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Aiyu</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--fish@domain.tld')" title="Copy name+xn--fish@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="22.0" data-email="name+xn--mushrooms@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">奴奮奿奪奺奼奷</div><div class="domain-puny">xn--mushrooms</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>奴奮奿奪奺奼奷</i></span></div><div class="domain-contact">💰 22.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--mushrooms@domain.tld')" title="Copy name+xn--mushrooms@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--iy8hj1d@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🤍🕸</div><div class="domain-puny">xn--iy8hj1d</div><div class="domain-descriptions"><span class="desc-text">"Letters + WHITE HEART, SPIDER WEB"</span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--iy8hj1d@domain.tld')" title="Copy name+xn--iy8hj1d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--7bi2588mba@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🔥✌🔥</div><div class="domain-puny">xn--7bi2588mba</div><div class="domain-descriptions"><span class="desc-text">"Letters + FIRE, VICTORY HAND, FIRE"</span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--7bi2588mba@domain.tld')" title="Copy name+xn--7bi2588mba@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--vpn@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">䃗</div><div class="domain-puny">xn--vpn</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-40D7"</span> <span class="translate-text"><i>烗</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--vpn@domain.tld')" title="Copy name+xn--vpn@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--w55l@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">𪞈</div><div class="domain-puny">xn--w55l</div><div class="domain-descriptions"><span class="desc-text">"Letters + CJK UNIFIED IDEOGRAPH-2A788"</span> <span class="translate-text"><i>𪞈</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--w55l@domain.tld')" title="Copy name+xn--w55l@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--kitty-7d34d@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">kitty😻</div><div class="domain-puny">xn--kitty-7d34d</div><div class="domain-descriptions"><span class="desc-text">"LATIN SMALL LETTER K + LATIN SMALL LETTER I + LATIN SMALL LETTER T + LATIN SMALL LETTER T + LATIN SMALL LETTER Y + SMILING CAT FACE WITH HEART-SHAPED EYES"</span> <span class="translate-text"><i>kitty😻</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--kitty-7d34d@domain.tld')" title="Copy name+xn--kitty-7d34d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--sdka1fb@domain.tld" data-tags="PUNY_IDNA,Japanese, All Names" data-puny="true"><div class="domain-unicode">フワフワ</div><div class="domain-puny">xn--sdka1fb</div><div class="domain-descriptions"><span class="desc-text">"Japanese"</span> <span class="translate-text"><i>Fluffy</i></span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--sdka1fb@domain.tld')" title="Copy name+xn--sdka1fb@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="55.0" data-email="name+xn--6r8hnw@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">😂💛</div><div class="domain-puny">xn--6r8hnw</div><div class="domain-descriptions"><span class="desc-text">"FACE WITH TEARS OF JOY + YELLOW HEART"</span></div><div class="domain-contact">💰 55.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--6r8hnw@domain.tld')" title="Copy name+xn--6r8hnw@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--xxif@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">⨇⨄</div><div class="domain-puny">xn--xxif</div><div class="domain-descriptions"><span class="desc-text">"Letters + TWO LOGICAL AND OPERATOR, N-ARY UNION OPERATOR WITH PLUS"</span> <span class="translate-text"><i>“Mu”</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--xxif@domain.tld')" title="Copy name+xn--xxif@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--f28h93c@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🤣😁</div><div class="domain-puny">xn--f28h93c</div><div class="domain-descriptions"><span class="desc-text">"Letters + ROLLING ON THE FLOOR LAUGHING, GRINNING FACE WITH SMILING EYES"</span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--f28h93c@domain.tld')" title="Copy name+xn--f28h93c@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--i18hb@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🗢🗡</div><div class="domain-puny">xn--i18hb</div><div class="domain-descriptions"><span class="desc-text">"Letters + LIPS, DAGGER KNIFE"</span> <span class="translate-text"><i>femme fatale</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--i18hb@domain.tld')" title="Copy name+xn--i18hb@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--4fiv938m@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">➕👑</div><div class="domain-puny">xn--4fiv938m</div><div class="domain-descriptions"><span class="desc-text">"Letters + HEAVY PLUS SIGN, CROWN"</span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--4fiv938m@domain.tld')" title="Copy name+xn--4fiv938m@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--cb7ba@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">침침</div><div class="domain-puny">xn--cb7ba</div><div class="domain-descriptions"><span class="desc-text">"Letters + HANGUL SYLLABLE CIM, HANGUL SYLLABLE CIM"</span> <span class="translate-text"><i>drooling</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--cb7ba@domain.tld')" title="Copy name+xn--cb7ba@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--80amepv@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">мираж</div><div class="domain-puny">xn--80amepv</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>a mirage</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80amepv@domain.tld')" title="Copy name+xn--80amepv@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--r0y@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">盷</div><div class="domain-puny">xn--r0y</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>緷</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--r0y@domain.tld')" title="Copy name+xn--r0y@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--hes@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">圵</div><div class="domain-puny">xn--hes</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>嵵</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--hes@domain.tld')" title="Copy name+xn--hes@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--formula@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">又变变叕収</div><div class="domain-puny">xn--formula</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Change and harvest again</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--formula@domain.tld')" title="Copy name+xn--formula@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--power@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">殿毇毁</div><div class="domain-puny">xn--power</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>The palace was destroyed</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--power@domain.tld')" title="Copy name+xn--power@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--8pvt78h@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">本革</div><div class="domain-puny">xn--8pvt78h</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>genuine leather</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--8pvt78h@domain.tld')" title="Copy name+xn--8pvt78h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="222.0" data-email="name+xn--r0x@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">爮</div><div class="domain-puny">xn--r0x</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>爮</i></span></div><div class="domain-contact">💰 222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--r0x@domain.tld')" title="Copy name+xn--r0x@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="555.0" data-email="name+xn--v4hw420o@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">☮💛</div><div class="domain-puny">xn--v4hw420o</div><div class="domain-descriptions"><span class="desc-text">"PEACE SYMBOL + YELLOW HEART"</span></div><div class="domain-contact">💰 555.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--v4hw420o@domain.tld')" title="Copy name+xn--v4hw420o@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="555.0" data-email="name+xn--6r8h0n@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">💛🕸</div><div class="domain-puny">xn--6r8h0n</div><div class="domain-descriptions"><span class="desc-text">"Letters + YELLOW HEART, SPIDER WEB"</span></div><div class="domain-contact">💰 555.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--6r8h0n@domain.tld')" title="Copy name+xn--6r8h0n@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="555.0" data-email="name+xn--sr8hf2f@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">🥰💍</div><div class="domain-puny">xn--sr8hf2f</div><div class="domain-descriptions"><span class="desc-text">"Letters + SMILING FACE WITH SMILING EYES AND THREE HEARTS, RING"</span></div><div class="domain-contact">💰 555.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--sr8hf2f@domain.tld')" title="Copy name+xn--sr8hf2f@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--5h8hnq@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">👃🌼</div><div class="domain-puny">xn--5h8hnq</div><div class="domain-descriptions"><span class="desc-text">"Letters + NOSE, BLOSSOM"</span> <span class="translate-text"><i>smell the flowers</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--5h8hnq@domain.tld')" title="Copy name+xn--5h8hnq@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--n00b@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">끟</div><div class="domain-puny">xn--n00b</div><div class="domain-descriptions"><span class="desc-text">"Letters + HANGUL SYLLABLE GGEUH"</span> <span class="translate-text"><i>Wow</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--n00b@domain.tld')" title="Copy name+xn--n00b@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--nckh9tz79m@domain.tld" data-tags="PUNY_IDNA,Japanese, All Names" data-puny="true"><div class="domain-unicode">ケーキ屋</div><div class="domain-puny">xn--nckh9tz79m</div><div class="domain-descriptions"><span class="desc-text">"Japanese"</span> <span class="translate-text"><i>cake shop</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--nckh9tz79m@domain.tld')" title="Copy name+xn--nckh9tz79m@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80afpisy@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">готика</div><div class="domain-puny">xn--80afpisy</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>Gothic</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80afpisy@domain.tld')" title="Copy name+xn--80afpisy@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--d1aeyma@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">джосс</div><div class="domain-puny">xn--d1aeyma</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>joss</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--d1aeyma@domain.tld')" title="Copy name+xn--d1aeyma@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--j1aaclc@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">колко</div><div class="domain-puny">xn--j1aaclc</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>how much</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--j1aaclc@domain.tld')" title="Copy name+xn--j1aaclc@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80aa6ac2h@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">малая</div><div class="domain-puny">xn--80aa6ac2h</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>small</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80aa6ac2h@domain.tld')" title="Copy name+xn--80aa6ac2h@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--80afoini@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">никога</div><div class="domain-puny">xn--80afoini</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>never</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--80afoini@domain.tld')" title="Copy name+xn--80afoini@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--m1abbj5a@domain.tld" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true"><div class="domain-unicode">сочно</div><div class="domain-puny">xn--m1abbj5a</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>juicy</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--m1abbj5a@domain.tld')" title="Copy name+xn--m1abbj5a@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--whr773l@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">通勤</div><div class="domain-puny">xn--whr773l</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>commute</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--whr773l@domain.tld')" title="Copy name+xn--whr773l@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--d4x91d@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">番犬</div><div class="domain-puny">xn--d4x91d</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>watchdog</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--d4x91d@domain.tld')" title="Copy name+xn--d4x91d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--x4w487d@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">混账</div><div class="domain-puny">xn--x4w487d</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>Asshole</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--x4w487d@domain.tld')" title="Copy name+xn--x4w487d@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="2222.0" data-email="name+xn--20t@domain.tld" data-tags="PUNY_IDNA,CJK, All Names" data-puny="true"><div class="domain-unicode">引</div><div class="domain-puny">xn--20t</div><div class="domain-descriptions"><span class="desc-text">"Chinese/Japanese/Korean"</span> <span class="translate-text"><i>lead</i></span></div><div class="domain-contact">💰 2222.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--20t@domain.tld')" title="Copy name+xn--20t@domain.tld">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="99999.0" data-email="name+xn--w4h6840o@domain.tld" data-tags="PUNY_IDNA, All Names" data-puny="true"><div class="domain-unicode">☯🕉</div><div class="domain-puny">xn--w4h6840o</div><div class="domain-descriptions"><span class="desc-text">"Letters + YIN YANG, OM SYMBOL"</span></div><div class="domain-contact">💰 99999.0 <button class="copy-email-btn" onclick="copyEmail(event, 'name+xn--w4h6840o@domain.tld')" title="Copy name+xn--w4h6840o@domain.tld">eml</button></div></span></div></div>
+</div>
+<script>
+let darkMode = true;
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    document.body.classList.toggle("dark-mode");
+}
+const modeToggle = document.getElementById('mode-toggle');
+if (modeToggle) {
+    modeToggle.addEventListener('click', toggleDarkMode);
+}
+
+// Grid/List toggle
+const toggleViewBtn = document.getElementById('toggle-view');
+if (toggleViewBtn) {
+    toggleViewBtn.addEventListener('click', function() {
+        const grids = document.querySelectorAll('.grid');
+        grids.forEach(grid => grid.classList.toggle('list-view'));
+        this.textContent = document.querySelector('.grid.list-view') ? '📋 List' : '📊 Grid';
+    });
+}
+
+// Description toggle
+function toggleDescriptions() {
+    const descToggleBtn = document.getElementById('desc-toggle');
+    document.body.classList.toggle('hide-descriptions');
+    if (document.body.classList.contains('hide-descriptions')) {
+        descToggleBtn.textContent = 'Show Descripts';
+    } else {
+        descToggleBtn.textContent = 'Hide Descripts';
+    }
+}
+
+document.getElementById("zoom-in").addEventListener("click", function() {
+    document.body.style.fontSize = parseInt(window.getComputedStyle(document.body).fontSize) + 3 + "px";
+});
+document.getElementById("zoom-out").addEventListener("click", function() {
+    document.body.style.fontSize = parseInt(window.getComputedStyle(document.body).fontSize) - 3 + "px";
+});
+
+let sortState = 0;
+const sortButton = document.getElementById("sort-tlds");
+sortButton.addEventListener("click", function() {
+    sortState = (sortState + 1) % 5;
+    var grid = document.querySelector('.grid');
+    if (grid) {
+        var items = Array.from(grid.querySelectorAll('.col'));
+        
+        switch(sortState) {
+            case 0:
+                for (let i = items.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [items[i], items[j]] = [items[j], items[i]];
+                }
+                this.textContent = 'Sort: Random';
+                break;
+            case 1:
+                items.sort((a, b) => a.textContent.toLowerCase().localeCompare(b.textContent.toLowerCase()));
+                this.textContent = 'Sort: A-Z ▲';
+                break;
+            case 2:
+                items.sort((a, b) => b.textContent.toLowerCase().localeCompare(a.textContent.toLowerCase()));
+                this.textContent = 'Sort: Z-A ▼';
+                break;
+            case 3:
+                items.sort((a, b) => {
+                    const priceA = parseFloat(a.querySelector('.domain-with-contact')?.dataset?.price || '999999');
+                    const priceB = parseFloat(b.querySelector('.domain-with-contact')?.dataset?.price || '999999');
+                    return priceA - priceB;
+                });
+                this.textContent = 'Sort: Price ▲';
+                break;
+            case 4:
+                items.sort((a, b) => {
+                    const priceA = parseFloat(a.querySelector('.domain-with-contact')?.dataset?.price || '0');
+                    const priceB = parseFloat(b.querySelector('.domain-with-contact')?.dataset?.price || '0');
+                    return priceB - priceA;
+                });
+                this.textContent = 'Sort: Price ▼';
+                break;
+        }
+        
+        grid.innerHTML = '';
+        items.forEach(item => grid.appendChild(item));
+    }
+});
+
+function copyEmail(event, email) {
+    event.preventDefault();
+    event.stopPropagation();
+    navigator.clipboard.writeText(email).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = originalText; }, 1000);
+    });
+}
+
+function filterDomains() {
+    const searchInput = document.getElementById('search-input').value.toLowerCase();
+    const minPrice = parseFloat(document.getElementById('min-price').value) || null;
+    const maxPrice = parseFloat(document.getElementById('max-price').value) || null;
+    const tagFilter = document.getElementById('tag-filter').value;
+    
+    const items = document.querySelectorAll('.col');
+    
+    items.forEach(item => {
+        const domainSpan = item.querySelector('.domain-with-contact');
+        if (!domainSpan) {
+            item.style.display = 'none';
+            return;
+        }
+        
+        // Text search
+        const domainText = item.textContent.toLowerCase();
+        let textMatch = searchInput === '' || domainText.includes(searchInput);
+        
+        // Price filter
+        let priceMatch = true;
+        if (minPrice !== null || maxPrice !== null) {
+            const priceData = domainSpan.dataset.price;
+            if (priceData) {
+                const price = parseFloat(priceData);
+                if (minPrice !== null && price < minPrice) priceMatch = false;
+                if (maxPrice !== null && price > maxPrice) priceMatch = false;
+            } else {
+                priceMatch = false;
+            }
+        }
+        
+        // Tag filter with No PUNY support
+        let tagMatch = true;
+        if (tagFilter) {
+            if (tagFilter === '__NO_PUNY__') {
+                // Special case: hide punycode domains
+                const isPuny = domainSpan.dataset.puny === 'true';
+                if (isPuny) {
+                    tagMatch = false;
+                }
+            } else {
+                // Regular tag filtering
+                const tags = (domainSpan.dataset.tags || '').split(',').map(t => t.trim());
+                tagMatch = tags.includes(tagFilter);
+            }
+        }
+        
+        item.style.display = (textMatch && priceMatch && tagMatch) ? '' : 'none';
+    });
+}
+
+function searchNames() {
+    filterDomainsWithPagination();
+}
+
+document.getElementById('search-input').addEventListener('keyup', filterDomainsWithPagination);
+document.getElementById('min-price').addEventListener('input', filterDomainsWithPagination);
+document.getElementById('max-price').addEventListener('input', filterDomainsWithPagination);
+document.getElementById('clear-filters').addEventListener('click', function() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('min-price').value = '';
+    document.getElementById('max-price').value = '';
+    document.getElementById('tag-filter').value = '';
+    filterDomainsWithPagination();
+});
+
+// Pagination
+let currentPage = 1;
+let itemsPerPage = 100;
+let allVisibleItems = [];
+
+function updatePagination() {
+    const perPageSelect = document.getElementById('per-page');
+    const value = perPageSelect.value;
+    itemsPerPage = value === 'all' ? Infinity : parseInt(value);
+    currentPage = 1;
+    showPage();
+}
+
+function showPage() {
+    const items = document.querySelectorAll('.col');
+    allVisibleItems = Array.from(items).filter(item => item.style.display !== 'none');
+    
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    // Hide all first
+    items.forEach(item => {
+        if (item.style.display !== 'none') {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Show current page
+    allVisibleItems.slice(start, end).forEach(item => {
+        item.style.display = '';
+    });
+    
+    // Update pagination controls
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage >= totalPages || itemsPerPage === Infinity;
+    document.getElementById('page-info').textContent = itemsPerPage === Infinity ? 
+        `Showing all ${allVisibleItems.length} names` : 
+        `Page ${currentPage} of ${totalPages} (${allVisibleItems.length} names)`;
+}
+
+function filterDomainsWithPagination() {
+    filterDomains();
+    currentPage = 1;
+    showPage();
+}
+
+document.getElementById('per-page').addEventListener('change', updatePagination);
+document.getElementById('prev-page').addEventListener('click', function() {
+    if (currentPage > 1) {
+        currentPage--;
+        showPage();
+        window.scrollTo(0, 0);
+    }
+});
+document.getElementById('next-page').addEventListener('click', function() {
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        showPage();
+        window.scrollTo(0, 0);
+    }
+});
+
+// Initialize - show all domains with pagination
+filterDomains();
+showPage();
+</script>
+</body>
+</html>

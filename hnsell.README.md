@@ -13,23 +13,27 @@
 ## What's New in v0.4.0
 
 ### **Data Preservation**
+
 - ✅ **Respect Existing Entries**: Checkbox option (default: checked) to preserve manual edits during reprocessing
 - Skips domains that already have `descript-IDNA`, `description`, or `translate-IDNA` values
 - Uncheck to override and re-process all domains
 - Shows skip counter: `ℹ Skipped {n} domains (already have descript/translate values)`
 
 ### **Translation Integration**
+
 - ✅ **Google Translate API**: Optional translation of PUNY_IDNA unicode domains
 - Target language selection: en, es, fr, de, ja, zh-CN, etc.
 - Requires `deep-translator` package (graceful fallback if missing)
 - Adds `translate-IDNA` column to processed CSVs
 
 ### **Enhanced Language Detection**
+
 - 20+ languages/scripts: CJK, Japanese, Arabic, Hebrew, Cyrillic, Greek, Thai, Hindi, Tamil, Malayalam, Georgian, Armenian, Hawaiian, European Latin Extended
 - Automatic language tagging in `tags` column
 - Smart emoji character name descriptions
 
 ### **UI/UX Improvements**
+
 - Fully functional PageMaker tab scrolling (wxPython ScrolledPanel)
 - Better performance and native OS look-and-feel
 - Color-coded buttons for actions
@@ -44,6 +48,7 @@ Core punycode validation logic remains based on @i1li's original implementation.
 ## Application Architecture
 
 **GUI Framework**: wxPython (production version)
+
 - Superior PageMaker tab scrolling performance
 - Native OS look-and-feel (Windows/Linux/Mac)
 - Better responsive design for complex layouts
@@ -127,16 +132,19 @@ pip install -r requirements.txt
 ```
 
 **Required packages** (`requirements.txt`):
+
 - `wxPython` - GUI framework (PRIMARY)
 - `pandas>=2.2.0` - CSV processing
 - `idna>=3.6` - Punycode conversion
 
 **Optional packages**:
+
 - `deep-translator` - Translation features (graceful fallback if missing)
   - Install: `pip install deep-translator`
   - If missing: Translation checkbox disabled with warning message
 
 **Platform-specific notes**:
+
 - **Windows**: wxPython installs via pip automatically
 - **Linux**: `sudo apt-get install python3-wxgtk4.0`
 - **Mac**: `pip install wxPython` (may require Xcode Command Line Tools)
@@ -235,7 +243,9 @@ The application automatically detects source formats based on CSV headers:
 - **Firewallet**: Other formats
 
 ## Output Files
+
 txt`
+
 - Unicode to Punycode:
 
 - Format: `original_name_YYYYMMDD.csv`
@@ -276,11 +286,21 @@ The processor adds tags to identify conversion methods:
 - **Search Function**: Real-time domain search with price range filtering
 - **Sort Options**: Random, A-Z, Z-A, Price Low-High, Price High-Low
 - **Email Copy**: Click 'eml' button to copy contact email to clipboard
-- **Smart Linking**: 
+- **Smart Linking**:
   - Namebase/Shakestation domains link to marketplace
   - Bob/Firewallet domains show price and email contact only
 - **Responsive Design**: Auto-adjusts for mobile/desktop
 - **Tooltips**: Hover over domain names to see full text
+
+## Application Data
+
+The application stores settings, profiles, and logs in the `hnsell_data/` subdirectory:
+
+- **hnsell_settings.json** - Last used settings (auto-saved on exit)
+- **hnsell_profile_*.json** - Named profiles saved via Settings Manager
+- **hnsell_processing.log** - Processing history with timestamps and error details
+
+These files are automatically created and gitignored for privacy.
 
 ## Troubleshooting
 
@@ -305,6 +325,10 @@ The processor adds tags to identify conversion methods:
    - Some punycode domains may be invalid
    - Check the PUNY_INVALID tag in output
 
+5. **Log file location**:
+   - Processing log: `hnsell_data/hnsell_processing.log`
+   - Check this file for detailed error messages and timestamps
+
 ## Related Documentation
 
 - **[README.md](README.md)** - Main project overview with all tools
@@ -315,6 +339,7 @@ The processor adds tags to identify conversion methods:
 ## Standalone Tools
 
 For specific workflows, consider these standalone alternatives:
+
 - **PageMaker**: `pagemaker/pagemaker2.py` - HTML generation only
 - **Puny2Uni CLI**: `puny2uni/puny2uni2.py` - Command-line conversion with translation
 - **Puny2Uni GUI**: `puny2uni/puny2uni2gui.py` - Simple converter interface

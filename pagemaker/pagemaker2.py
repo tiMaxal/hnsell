@@ -177,6 +177,12 @@ class PageMakerApp:
         self.list_all_var = tk.BooleanVar(value=False)
         tk.Checkbutton(checkbox_row, text="List all domains (ignore email/price requirement for bob/fw)", variable=self.list_all_var).pack(side='left', padx=5)
         
+        checkbox_row2 = tk.Frame(options_frame)
+        checkbox_row2.pack(fill='x', pady=2)
+        
+        self.include_descriptions_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(checkbox_row2, text="Include descriptions/translations (on-page grid/list toggle)", variable=self.include_descriptions_var).pack(side='left', padx=5)
+        
         email_row = tk.Frame(options_frame)
         email_row.pack(fill='x', pady=5)
         tk.Label(email_row, text="Auto-append email for domains with price (leave empty to skip):").pack(side='left', padx=5)
@@ -548,6 +554,8 @@ class PageMakerApp:
     
     def generate_portfolio_html(self, domains):
         """Generate the complete HTML content"""
+        include_descriptions = self.include_descriptions_var.get()
+        
         df = pd.DataFrame(domains)
         df['tags'] = df['tags'].apply(lambda x: x.strip() + ', All Names' if isinstance(x, str) and len(x.strip()) > 0 else 'All Names')
         
@@ -566,15 +574,22 @@ class PageMakerApp:
                 tag = tag.strip()
                 if tag not in tags_dict:
                     tags_dict[tag] = []
-                tags_dict[tag].append(self.format_domain_link(row))
+                tags_dict[tag].append(self.format_domain_link(row, include_descriptions))
         
         tags_sorted = ['All Names'] + sorted(set(tags_dict.keys()) - {'All Names'})
         
+        # Build single grid with all domains (no sections)
+        all_names_html = ''.join(f'<div class="col">{name}</div>' for tag in tags_sorted for name in tags_dict[tag])
+        tag_groups_content = f'<div class="grid">{all_names_html}</div>'
+        
+        # Build tag dropdown options
+        tag_options_html = '<option value="">All Names</option>'
+        tag_options_html += '<option value="__NO_PUNY__">No PUNY</option>'
+        tag_options_html += '<option disabled>\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</option>'
         for tag in tags_sorted:
-            section_id = tag.lower().replace(' ', '-')
-            names_under_tag = ''.join(f'<div class="col" data-tags="{tag}">{name}</div>' for name in tags_dict[tag])
-            tag_groups_content += f'<div id="{section_id}" class="tag-section"><h2>{tag}</h2><div class="grid">{names_under_tag}</div></div>'
-            navigation_links_html += f'<div class="navigation" onclick="showTagSection(\'{tag}\')">{tag}</div>'
+            if tag != 'All Names':
+                tag_options_html += f'<option value="{tag}">{tag}</option>'
+        navigation_links_html = f'<select id="tag-filter" onchange="filterDomainsWithPagination()">{tag_options_html}</select>'
         
         footer_html = ""
         if self.footer_file:
@@ -617,6 +632,12 @@ class PageMakerApp:
 <div class="sort-button">
     <button id="sort-tlds">Sort TLDs</button>
 </div>
+<div class="view-toggle">
+    <button id="toggle-view">📊 Grid / 📋 List</button>
+</div>
+<div class="desc-toggle">
+    <button id="desc-toggle" onclick="toggleDescriptions()">Hide Descripts</button>
+</div>
 </div>
 <div class="marketplace-links">
     <a href="https://shakeshift.com/names" target="_blank" rel="noreferrer">ShakeShift</a>
@@ -626,16 +647,29 @@ class PageMakerApp:
     <a href="https://impervious.com/fingertip" target="_blank" rel="noreferrer">Fingertip</a>
     <a href="https://git.woodburn.au/nathanwoodburn/firewalletbrowser" target="_blank" rel="noreferrer">Firewallet</a>
 </div>
-<div class="navigation-container">
-{navigation_links_html}
-</div>
-<div class="content">
+<div class="filter-controls">
     <div class="search-container">
         <input type="text" id="search-input" placeholder="Search names...">
         <input type="number" id="min-price" placeholder="Min price" step="0.01">
         <input type="number" id="max-price" placeholder="Max price" step="0.01">
+        <label for="tag-filter">Filter:</label>
+        {navigation_links_html}
         <button id="clear-filters">Clear</button>
+        <label for="per-page" style="margin-left: 1em;">Per page:</label>
+        <select id="per-page">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="500">500</option>
+            <option value="all">All</option>
+        </select>
     </div>
+    <div id="pagination-controls" style="text-align: center; padding: 0.5em;">
+        <button id="prev-page" disabled>← Prev</button>
+        <span id="page-info" style="margin: 0 1em;">Page 1</span>
+        <button id="next-page">Next →</button>
+    </div>
+</div>
+<div class="content">
     {tag_groups_content}
 </div>
 {footer_html}
@@ -646,7 +680,7 @@ class PageMakerApp:
         
         return html_content
     
-    def format_domain_link(self, row):
+    def format_domain_link(self, row, include_descriptions=False):
         """Format a single domain entry with proper linking and contact info"""
         name = row['name']
         if isinstance(name, float):
@@ -658,58 +692,96 @@ class PageMakerApp:
         source = row.get('source', 'nb')
         email = row.get('email', '')
         price = row.get('price', '')
+        tags = row.get('tags', '')
+        descript = str(row.get('descript-IDNA', ''))
+        translate = str(row.get('translate-IDNA', ''))
         
         if isinstance(email, float) and math.isnan(email): email = ''
         if isinstance(price, float) and math.isnan(price): price = ''
         if str(email).lower() == 'nan': email = ''
         if str(price).lower() == 'nan': price = ''
+        if str(descript).lower() == 'nan': descript = ''
+        if str(translate).lower() == 'nan': translate = ''
         
-        # Format display name
-        if name.startswith('xn--'):
-            if unicode_val and unicode_val.lower() != 'nan' and unicode_val.strip():
-                try:
-                    unicode_bytes = codecs.decode(unicode_val, 'unicode_escape')
-                    unicode_char = unicode_bytes.encode('latin-1').decode('utf-8')
-                except:
-                    unicode_char = unicode_val
-                display_name = f"{unicode_char} ({name})"
-            else:
-                display_name = name
-        else:
-            display_name = name
-        
-        # Build contact parts
-        contact_parts = []
-        if price:
-            contact_parts.append(f"💰 {price}")
-        if email:
-            copy_btn = f'<button class="copy-email-btn" onclick="copyEmail(event, \'{email}\')" title="Copy {email}">eml</button>'
-            contact_parts.append(copy_btn)
-        
-        # Determine base URL based on source
+        # Determine URL or contact display
         if source == 'ss':
             base_url = f"https://shakestation.io/domain/{name}"
         elif source == 'nb':
             base_url = f"https://www.namebase.io/domains/{name}"
-        elif source in ['bob', 'fw']:
-            # No marketplace link for bob/fw
-            if contact_parts:
-                contact_str = ' '.join(contact_parts)
-                return f'<span class="domain-with-contact" data-price="{price if price else ""}" data-email="{email if email else ""}">' + \
-                       f'<div class="domain-name">{display_name}</div><div class="domain-contact">{contact_str}</div></span>'
-            else:
-                return f'<span class="domain-with-contact" data-price="" data-email=""><div class="domain-name">{display_name}</div></span>'
+        elif source == 'bob' or source == 'fw':
+            # Bob/FW: No marketplace link
+            unicode_display = ''
+            if name.startswith('xn--') and unicode_val and unicode_val.lower() != 'nan':
+                try:
+                    unicode_bytes = codecs.decode(unicode_val, 'unicode_escape')
+                    unicode_display = unicode_bytes.encode('latin-1').decode('utf-8')
+                except:
+                    unicode_display = unicode_val
+            
+            contact_parts_formatted = []
+            if price:
+                contact_parts_formatted.append(f"💰 {price}")
+            if email:
+                contact_parts_formatted.append(f'<button class="copy-email-btn" onclick="copyEmail(event, \'{email}\')" title="Copy {email}">eml</button>')
+            
+            # Layout: unicode → puny → descriptions → price/email (bottom)
+            html_parts = []
+            if unicode_display:
+                html_parts.append(f'<div class="domain-unicode">{unicode_display}</div>')
+            html_parts.append(f'<div class="domain-puny">{name}</div>')
+            
+            if include_descriptions:
+                desc_parts = []
+                if descript:
+                    desc_parts.append(f'<span class="desc-text">"{descript}"</span>')
+                if translate:
+                    desc_parts.append(f'<span class="translate-text"><i>{translate}</i></span>')
+                if desc_parts:
+                    html_parts.append(f'<div class="domain-descriptions">{" ".join(desc_parts)}</div>')
+            
+            if contact_parts_formatted:
+                html_parts.append(f'<div class="domain-contact">{" ".join(contact_parts_formatted)}</div>')
+            
+            is_puny = "true" if name.startswith('xn--') else "false"
+            return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}">' + ''.join(html_parts) + '</span>'
         else:
             base_url = f"https://www.namebase.io/domains/{name}"
         
-        # For marketplace sources
-        if contact_parts:
-            contact_str = ' '.join(contact_parts)
-            return f'<span class="domain-with-contact" data-price="{price if price else ""}" data-email="{email if email else ""}">' + \
-                   f'<div class="domain-name"><a target="_blank" rel="noreferrer" href="{base_url}">{display_name}</a></div>' + \
-                   f'<div class="domain-contact">{contact_str}</div></span>'
-        else:
-            return f'<a target="_blank" rel="noreferrer" href="{base_url}">{display_name}</a>'
+        # SS/NB: with marketplace links
+        unicode_display = ''
+        if name.startswith('xn--') and unicode_val and unicode_val.lower() != 'nan':
+            try:
+                unicode_bytes = codecs.decode(unicode_val, 'unicode_escape')
+                unicode_display = unicode_bytes.encode('latin-1').decode('utf-8')
+            except:
+                unicode_display = unicode_val
+        
+        contact_parts_formatted = []
+        if price:
+            contact_parts_formatted.append(f"💰 {price}")
+        if email:
+            contact_parts_formatted.append(f'<button class="copy-email-btn" onclick="copyEmail(event, \'{email}\')" title="Copy {email}">eml</button>')
+        
+        # Layout: unicode → puny link → descriptions → price/email (bottom)
+        html_parts = []
+        if unicode_display:
+            html_parts.append(f'<div class="domain-unicode">{unicode_display}</div>')
+        html_parts.append(f'<div class="domain-puny"><a target="_blank" rel="noreferrer" href="{base_url}">{name}</a></div>')
+        
+        if include_descriptions:
+            desc_parts = []
+            if descript:
+                desc_parts.append(f'<span class="desc-text">"{descript}"</span>')
+            if translate:
+                desc_parts.append(f'<span class="translate-text"><i>{translate}</i></span>')
+            if desc_parts:
+                html_parts.append(f'<div class="domain-descriptions">{" ".join(desc_parts)}</div>')
+        
+        if contact_parts_formatted:
+            html_parts.append(f'<div class="domain-contact">{" ".join(contact_parts_formatted)}</div>')
+        
+        is_puny = "true" if name.startswith('xn--') else "false"
+        return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}">' + ''.join(html_parts) + '</span>'
 
     
     def get_portfolio_css(self):
@@ -731,23 +803,30 @@ class PageMakerApp:
         
         # Default dark+light theme
         return """<style>
-.zoom-buttons {
-    position: absolute;
-    top: 50px;
-    right: 10px;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+.buttons-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
     z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.zoom-buttons {
+    position: relative;
 }
 .mode-toggle {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
+    position: relative;
 }
 .sort-button {
-    position: absolute;
-    top: 90px;
-    right: 10px;
-    z-index: 1000;
+    position: relative;
+}
+.view-toggle {
+    position: relative;
+}
+.desc-toggle {
+    position: relative;
 }
 button {
     font-size: .9em;
@@ -907,20 +986,91 @@ input {
 .email-link:hover {
     text-decoration: underline;
 }
+.grid.list-view {
+    display: flex;
+    flex-direction: column;
+}
+.grid.list-view .col {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    max-width: 100%;
+}
+.grid.list-view .domain-with-contact {
+    flex-direction: row;
+    width: 100%;
+}
+.grid.list-view .domain-unicode {
+    display: inline;
+    margin-right: 0.3em;
+}
+.grid.list-view .domain-puny {
+    display: inline;
+    margin-right: 0.5em;
+}
+.grid.list-view .domain-contact {
+    display: inline-flex;
+    margin: 0 0.5em;
+}
+.grid.list-view .domain-descriptions {
+    margin-left: auto;
+    flex-direction: row;
+    text-align: right;
+}
+.col {
+    padding: 0.7em;
+    background-color: rgba(111, 111, 111, 0.1);
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    text-align: center;
+}
+body.hide-descriptions .domain-descriptions {
+    display: none;
+}
+.filter-controls {
+    margin: 10px 0;
+}
+#tag-filter {
+    padding: 8px;
+    margin: 0 5px;
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    background-color: rgba(52, 4, 244, 0.1);
+    color: inherit;
+    cursor: pointer;
+}
 .domain-with-contact {
     display: flex;
     flex-direction: column;
     gap: 0.3em;
 }
-.domain-name {
+.domain-unicode {
     font-weight: bold;
+    font-size: 1.1em;
+}
+.domain-puny {
+    font-size: 0.85em;
+    opacity: 0.8;
 }
 .domain-contact {
     font-size: 0.9em;
     display: flex;
     gap: 0.5em;
     justify-content: center;
-    align-items: center;
+}
+.domain-descriptions {
+    font-size: 0.85em;
+    margin-top: 0.3em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+}
+.desc-text {
+    color: inherit;
+}
+.translate-text {
+    color: inherit;
+    opacity: 0.9;
 }
 footer, .credits {
     margin-top: 2em;
@@ -1329,60 +1479,72 @@ footer *, .credits * {{
         if theme == "3-way switch":
             return self.get_threeway_js()
         
-        # Default dark+light JavaScript
+        # Default dark+light JavaScript with pagination
         return """<script>
 let darkMode = true;
-const prefersLightMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-if (prefersLightMode) {
-    toggleDarkMode();
-}
 function toggleDarkMode() {
     darkMode = !darkMode;
     document.body.classList.toggle("dark-mode");
-    const links = document.querySelectorAll('a');
-    links.forEach((link) => {
-        if (darkMode) {
-            link.classList.add('dark-mode');
-        } else {
-            link.classList.remove('dark-mode');
-        }
-    });
 }
 const modeToggle = document.getElementById('mode-toggle');
-modeToggle.addEventListener('click', toggleDarkMode);
+if (modeToggle) {
+    modeToggle.addEventListener('click', toggleDarkMode);
+}
+
+// Grid/List toggle
+const toggleViewBtn = document.getElementById('toggle-view');
+if (toggleViewBtn) {
+    toggleViewBtn.addEventListener('click', function() {
+        const grids = document.querySelectorAll('.grid');
+        grids.forEach(grid => grid.classList.toggle('list-view'));
+        this.textContent = document.querySelector('.grid.list-view') ? '📋 List' : '📊 Grid';
+    });
+}
+
+// Description toggle
+function toggleDescriptions() {
+    const descToggleBtn = document.getElementById('desc-toggle');
+    document.body.classList.toggle('hide-descriptions');
+    if (document.body.classList.contains('hide-descriptions')) {
+        descToggleBtn.textContent = 'Show Descripts';
+    } else {
+        descToggleBtn.textContent = 'Hide Descripts';
+    }
+}
+
 document.getElementById("zoom-in").addEventListener("click", function() {
     document.body.style.fontSize = parseInt(window.getComputedStyle(document.body).fontSize) + 3 + "px";
 });
 document.getElementById("zoom-out").addEventListener("click", function() {
     document.body.style.fontSize = parseInt(window.getComputedStyle(document.body).fontSize) - 3 + "px";
 });
+
 let sortState = 0;
 const sortButton = document.getElementById("sort-tlds");
 sortButton.addEventListener("click", function() {
     sortState = (sortState + 1) % 5;
-    var currentSection = document.querySelector('.tag-section[style*="display: block"]');
-    if (currentSection) {
-        var grid = currentSection.querySelector('.grid');
-        var cols = Array.from(grid.querySelectorAll('.col'));
+    var grid = document.querySelector('.grid');
+    if (grid) {
+        var items = Array.from(grid.querySelectorAll('.col'));
         
         switch(sortState) {
             case 0:
-                for (let i = cols.length - 1; i > 0; i--) {
+                for (let i = items.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [cols[i], cols[j]] = [cols[j], cols[i]];
+                    [items[i], items[j]] = [items[j], items[i]];
                 }
                 this.textContent = 'Sort: Random';
                 break;
             case 1:
-                cols.sort((a, b) => a.textContent.toLowerCase().localeCompare(b.textContent.toLowerCase()));
+                items.sort((a, b) => a.textContent.toLowerCase().localeCompare(b.textContent.toLowerCase()));
                 this.textContent = 'Sort: A-Z ▲';
                 break;
             case 2:
-                cols.sort((a, b) => b.textContent.toLowerCase().localeCompare(a.textContent.toLowerCase()));
+                items.sort((a, b) => b.textContent.toLowerCase().localeCompare(a.textContent.toLowerCase()));
                 this.textContent = 'Sort: Z-A ▼';
                 break;
             case 3:
-                cols.sort((a, b) => {
+                items.sort((a, b) => {
                     const priceA = parseFloat(a.querySelector('.domain-with-contact')?.dataset?.price || '999999');
                     const priceB = parseFloat(b.querySelector('.domain-with-contact')?.dataset?.price || '999999');
                     return priceA - priceB;
@@ -1390,7 +1552,7 @@ sortButton.addEventListener("click", function() {
                 this.textContent = 'Sort: Price ▲';
                 break;
             case 4:
-                cols.sort((a, b) => {
+                items.sort((a, b) => {
                     const priceA = parseFloat(a.querySelector('.domain-with-contact')?.dataset?.price || '0');
                     const priceB = parseFloat(b.querySelector('.domain-with-contact')?.dataset?.price || '0');
                     return priceB - priceA;
@@ -1400,7 +1562,7 @@ sortButton.addEventListener("click", function() {
         }
         
         grid.innerHTML = '';
-        cols.forEach(col => grid.appendChild(col));
+        items.forEach(item => grid.appendChild(item));
     }
 });
 
@@ -1415,103 +1577,136 @@ function copyEmail(event, email) {
     });
 }
 
-function showTagSection(tag) {
-    var sectionId = tag.toLowerCase().replace(' ', '-');
-    var section = document.getElementById(sectionId);
-    if (section) {
-        var sections = document.getElementsByClassName('tag-section');
-        for (var i = 0; i < sections.length; i++) {
-            sections[i].style.display = "none";
-        }
-        section.style.display = "block";
-    }
-}
-
-function searchNames() {
-    var input = document.getElementById('search-input');
-    var minPrice = document.getElementById('min-price');
-    var maxPrice = document.getElementById('max-price');
+function filterDomains() {
+    const searchInput = document.getElementById('search-input').value.toLowerCase();
+    const minPrice = parseFloat(document.getElementById('min-price').value) || null;
+    const maxPrice = parseFloat(document.getElementById('max-price').value) || null;
+    const tagFilter = document.getElementById('tag-filter').value;
     
-    if (input) {
-        var filter = input.value.toLowerCase();
-        var minVal = minPrice && minPrice.value ? parseFloat(minPrice.value) : null;
-        var maxVal = maxPrice && maxPrice.value ? parseFloat(maxPrice.value) : null;
+    const items = document.querySelectorAll('.col');
+    
+    items.forEach(item => {
+        const domainSpan = item.querySelector('.domain-with-contact');
+        if (!domainSpan) {
+            item.style.display = 'none';
+            return;
+        }
         
-        var names = document.getElementsByClassName('col');
-        for (var i = 0; i < names.length; i++) {
-            var name = names[i].innerText.toLowerCase();
-            var nameMatches = name.includes(filter);
-            
-            var priceMatches = true;
-            var domainSpan = names[i].querySelector('.domain-with-contact');
-            if (domainSpan && (minVal !== null || maxVal !== null)) {
-                var priceStr = domainSpan.dataset.price;
-                if (priceStr) {
-                    var price = parseFloat(priceStr);
-                    if (minVal !== null && price < minVal) priceMatches = false;
-                    if (maxVal !== null && price > maxVal) priceMatches = false;
-                } else {
-                    priceMatches = false;
-                }
-            }
-            
-            if (nameMatches && priceMatches) {
-                names[i].style.display = "block";
+        // Text search
+        const domainText = item.textContent.toLowerCase();
+        let textMatch = searchInput === '' || domainText.includes(searchInput);
+        
+        // Price filter
+        let priceMatch = true;
+        if (minPrice !== null || maxPrice !== null) {
+            const priceData = domainSpan.dataset.price;
+            if (priceData) {
+                const price = parseFloat(priceData);
+                if (minPrice !== null && price < minPrice) priceMatch = false;
+                if (maxPrice !== null && price > maxPrice) priceMatch = false;
             } else {
-                names[i].style.display = "none";
+                priceMatch = false;
             }
         }
-    }
-}
-
-var searchInput = document.getElementById('search-input');
-if (searchInput) {
-    searchInput.addEventListener('keyup', function() {
-        searchNames();
-    });
-}
-
-var minPriceInput = document.getElementById('min-price');
-var maxPriceInput = document.getElementById('max-price');
-if (minPriceInput) {
-    minPriceInput.addEventListener('input', searchNames);
-}
-if (maxPriceInput) {
-    maxPriceInput.addEventListener('input', searchNames);
-}
-
-var clearBtn = document.getElementById('clear-filters');
-if (clearBtn) {
-    clearBtn.addEventListener('click', function() {
-        if (searchInput) searchInput.value = '';
-        if (minPriceInput) minPriceInput.value = '';
-        if (maxPriceInput) maxPriceInput.value = '';
-        searchNames();
-    });
-}
-
-showTagSection('All Names');
-
-window.addEventListener('DOMContentLoaded', () => {
-    const addTooltipToNames = () => {
-        const cols = document.querySelectorAll('.col');
-        cols.forEach(col => {
-            col.setAttribute('title', col.textContent.trim());
-        });
-    };
-    addTooltipToNames();
-    
-    const marketplaceLinks = document.querySelector('.marketplace-links');
-    if (marketplaceLinks) {
-        const links = Array.from(marketplaceLinks.querySelectorAll('a'));
-        for (let i = links.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [links[i], links[j]] = [links[j], links[i]];
+        
+        // Tag filter with No PUNY support
+        let tagMatch = true;
+        if (tagFilter) {
+            if (tagFilter === '__NO_PUNY__') {
+                // Special case: hide punycode domains
+                const isPuny = domainSpan.dataset.puny === 'true';
+                if (isPuny) {
+                    tagMatch = false;
+                }
+            } else {
+                // Regular tag filtering
+                const tags = (domainSpan.dataset.tags || '').split(',').map(t => t.trim());
+                tagMatch = tags.includes(tagFilter);
+            }
         }
-        marketplaceLinks.innerHTML = '';
-        links.forEach(link => marketplaceLinks.appendChild(link));
+        
+        item.style.display = (textMatch && priceMatch && tagMatch) ? '' : 'none';
+    });
+}
+
+document.getElementById('search-input').addEventListener('keyup', filterDomainsWithPagination);
+document.getElementById('min-price').addEventListener('input', filterDomainsWithPagination);
+document.getElementById('max-price').addEventListener('input', filterDomainsWithPagination);
+document.getElementById('clear-filters').addEventListener('click', function() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('min-price').value = '';
+    document.getElementById('max-price').value = '';
+    document.getElementById('tag-filter').value = '';
+    filterDomainsWithPagination();
+});
+
+// Pagination
+let currentPage = 1;
+let itemsPerPage = 100;
+let allVisibleItems = [];
+
+function updatePagination() {
+    const perPageSelect = document.getElementById('per-page');
+    const value = perPageSelect.value;
+    itemsPerPage = value === 'all' ? Infinity : parseInt(value);
+    currentPage = 1;
+    showPage();
+}
+
+function showPage() {
+    const items = document.querySelectorAll('.col');
+    allVisibleItems = Array.from(items).filter(item => item.style.display !== 'none');
+    
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    // Hide all first
+    items.forEach(item => {
+        if (item.style.display !== 'none') {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Show current page
+    allVisibleItems.slice(start, end).forEach(item => {
+        item.style.display = '';
+    });
+    
+    // Update pagination controls
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage >= totalPages || itemsPerPage === Infinity;
+    document.getElementById('page-info').textContent = itemsPerPage === Infinity ? 
+        `Showing all ${allVisibleItems.length} names` : 
+        `Page ${currentPage} of ${totalPages} (${allVisibleItems.length} names)`;
+}
+
+function filterDomainsWithPagination() {
+    filterDomains();
+    currentPage = 1;
+    showPage();
+}
+
+document.getElementById('per-page').addEventListener('change', updatePagination);
+document.getElementById('prev-page').addEventListener('click', function() {
+    if (currentPage > 1) {
+        currentPage--;
+        showPage();
+        window.scrollTo(0, 0);
     }
 });
+document.getElementById('next-page').addEventListener('click', function() {
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        showPage();
+        window.scrollTo(0, 0);
+    }
+});
+
+// Initialize - show all domains with pagination
+filterDomains();
+showPage();
 </script>"""
 
     

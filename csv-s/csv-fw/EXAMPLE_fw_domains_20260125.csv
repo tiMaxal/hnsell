@@ -1,0 +1,11 @@
+name,unicode,descript-IDNA,translate-IDNA,tags,expiry,state,value,1D,1L,1C,2D,2L,2C
+example,,,,,2025-12-31,REGISTERED,5.5,,,,,,
+xn--e1afmkfd,пример,Cyrillic (Russian/Ukrainian),example,"PUNY_IDNA,Cyrillic",2025-12-31,REGISTERED,7.25,,,,,,
+testdomain,,,,,2025-11-30,REGISTERED,3.0,,,,,,
+xn--wgbh1c,مصر,Arabic/Urdu/Uyghur,Egypt,"PUNY_IDNA,Arabic",2026-01-15,REGISTERED,10.0,,,,,,
+demo-name,,,,,2025-10-20,REGISTERED,4.5,,,,,,
+myname,,,,,2025-12-01,REGISTERED,6.0,,,,,,
+xn--mgbaam7a8h,امارات,Arabic/Urdu/Uyghur,Emirates,"PUNY_IDNA,Arabic",2025-12-31,REGISTERED,8.0,,,,,,
+blockchain,,,,,2026-03-15,REGISTERED,15.0,,,,,,
+web3domain,,,,,2025-12-31,REGISTERED,12.0,,,,,,
+xn--80akhbyknj4f,испытание,Cyrillic (Russian/Ukrainian),trial,"PUNY_IDNA,Cyrillic",2026-02-10,REGISTERED,9.5,,,,,,

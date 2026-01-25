@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 20px;
+}
+body.dark-mode {
+    background-color: #000000;
+    color: #ffffff;
+}
+body.light-mode {
+    background-color: #cbec59;
+    color: #000000;
+}
+body.custom-mode {
+    background-color: #545bba;
+    color: #ffffff;
+}
+.buttons-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+button {
+    padding: 8px 16px;
+    background-color: rgba(52, 4, 244, 0.2);
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5em;
+    padding: 0.5em;
+}
+.grid.list-view {
+    display: flex;
+    flex-direction: column;
+}
+.grid.list-view .col {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    max-width: 100%;
+}
+.grid.list-view .domain-with-contact {
+    flex-direction: row;
+    width: 100%;
+}
+.grid.list-view .domain-unicode {
+    display: inline;
+    margin-right: 0.3em;
+}
+.grid.list-view .domain-puny {
+    display: inline;
+    margin-right: 0.5em;
+}
+.grid.list-view .domain-contact {
+    display: inline-flex;
+    margin: 0 0.5em;
+}
+.grid.list-view .domain-descriptions {
+    margin-left: auto;
+    flex-direction: row;
+    text-align: right;
+}
+.col {
+    padding: 0.7em;
+    background-color: rgba(111, 111, 111, 0.1);
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    text-align: center;
+}
+body.hide-descriptions .domain-descriptions {
+    display: none;
+}
+.filter-controls {
+    margin: 10px 0;
+}
+#tag-filter {
+    padding: 8px;
+    margin: 0 5px;
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    background-color: rgba(52, 4, 244, 0.1);
+    color: inherit;
+    cursor: pointer;
+}
+#buy-now-only {
+    padding: 8px 12px;
+    margin: 0 5px;
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    background-color: rgba(255, 215, 0, 0.2);
+    cursor: pointer;
+    font-weight: bold;
+}
+#buy-now-only.active {
+    background-color: rgba(255, 215, 0, 0.6);
+    border-color: #FFD700;
+}
+.domain-with-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+}
+.domain-unicode {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.domain-puny {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+.domain-contact {
+    font-size: 0.9em;
+    display: flex;
+    gap: 0.5em;
+    justify-content: center;
+}
+.domain-descriptions {
+    font-size: 0.85em;
+    margin-top: 0.3em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+}
+.desc-text {
+    color: inherit;
+}
+.translate-text {
+    color: inherit;
+    opacity: 0.9;
+}
+
+.marketplace-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5em;
+    padding: 1em;
+    margin: 10px 0 20px 0;
+    flex-wrap: wrap;
+}
+.search-container {
+    display: flex;
+    gap: 0.5em;
+    padding: 1em;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.copy-email-btn {
+    padding: 0.2em 0.5em;
+    margin-left: 0.3em;
+    background-color: rgba(111, 111, 111, 0.15);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+</style>
+</head>
+<body>
+<div class="buttons-container">
+<div class="mode-toggle">
+    <button id="themeBtn" onclick="cycleTheme()">☀️ Light</button>
+</div>
+<div class="zoom-buttons">
+    <button id="zoom-out">-</button>
+    <button id="zoom-in">+</button>
+</div>
+<div class="sort-button">
+    <button id="sort-tlds">Sort TLDs</button>
+</div>
+<div class="view-toggle">
+    <button id="toggle-view">📊 Grid / 📋 List</button>
+</div>
+<div class="desc-toggle">
+    <button id="desc-toggle" onclick="toggleDescriptions()">Hide Descripts</button>
+</div>
+</div>
+<div class="marketplace-links">
+    <a href="https://shakeshift.com/names" target="_blank" rel="noreferrer">ShakeShift</a>
+    <a href="https://bobwallet.io" target="_blank" rel="noreferrer">bobWallet</a>
+    <a href="https://www.namebase.io" target="_blank" rel="noreferrer">Namebase</a>
+    <a href="https://shakestation.io" target="_blank" rel="noreferrer">ShakeStation</a>
+    <a href="https://impervious.com/fingertip" target="_blank" rel="noreferrer">Fingertip</a>
+    <a href="https://git.woodburn.au/nathanwoodburn/firewalletbrowser" target="_blank" rel="noreferrer">Firewallet</a>
+</div>
+<div class="filter-controls">
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search names...">
+        <input type="number" id="min-price" placeholder="Min price" step="0.01">
+        <input type="number" id="max-price" placeholder="Max price" step="0.01">
+        <label for="tag-filter">Filter:</label>
+        <select id="tag-filter" onchange="filterDomainsWithPagination()"><option value="">All Names</option><option value="__NO_PUNY__">No PUNY</option><option value="__BUY_NOW__">💰 Buy Now Only</option><option disabled>───────────</option><option value="Arabic">Arabic</option><option value="Cyrillic">Cyrillic</option><option value="PUNY_IDNA">PUNY_IDNA</option></select>
+        <button id="buy-now-only" onclick="toggleBuyNowOnly()">💰 Buy Now Only</button>
+        <button id="clear-filters">Clear</button>
+    </div>
+    <div id="pagination-controls" style="text-align: center; padding: 0.5em; display: flex; justify-content: center; align-items: center; gap: 0.5em; flex-wrap: wrap;">
+        <button id="prev-page" disabled>← Prev</button>
+        <span id="page-info" style="margin: 0 0.5em;">Page 1</span>
+        <button id="next-page">Next →</button>
+        <label for="per-page" style="margin-left: 1em;">Per page:</label>
+        <select id="per-page">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="500">500</option>
+            <option value="all">All</option>
+        </select>
+        <label for="go-to-page">Go to:</label>
+        <input type="number" id="go-to-page" min="1" style="width: 60px;" />
+        <button onclick="goToPage()">Go</button>
+    </div>
+</div>
+<div class="content">
+    <div class="grid"><div class="col"><span class="domain-with-contact" data-price="100" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="bob"><div class="domain-puny">example</div><div class="domain-contact">💰 100 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="250" data-email="seller@example.com" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true" data-source="bob"><div class="domain-unicode">пример</div><div class="domain-puny">xn--e1afmkfd</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>example</i></span></div><div class="domain-contact">💰 250 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="50" data-email="contact@domain.com" data-tags="All Names" data-puny="false" data-source="bob"><div class="domain-puny">testdomain</div><div class="domain-contact">💰 50 <button class="copy-email-btn" onclick="copyEmail(event, 'contact@domain.com')" title="Copy contact@domain.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="500" data-email="owner@mail.com" data-tags="PUNY_IDNA,Arabic, All Names" data-puny="true" data-source="bob"><div class="domain-unicode">مصر</div><div class="domain-puny">xn--wgbh1c</div><div class="domain-descriptions"><span class="desc-text">"Arabic/Urdu/Uyghur"</span> <span class="translate-text"><i>Egypt</i></span></div><div class="domain-contact">💰 500 <button class="copy-email-btn" onclick="copyEmail(event, 'owner@mail.com')" title="Copy owner@mail.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="75" data-email="demo@example.com" data-tags="All Names" data-puny="false" data-source="bob"><div class="domain-puny">demo-name</div><div class="domain-contact">💰 75 <button class="copy-email-btn" onclick="copyEmail(event, 'demo@example.com')" title="Copy demo@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="150" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="bob"><div class="domain-puny">myname</div><div class="domain-contact">💰 150 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="300" data-email="seller@example.com" data-tags="PUNY_IDNA,Arabic, All Names" data-puny="true" data-source="bob"><div class="domain-unicode">امارات</div><div class="domain-puny">xn--mgbaam7a8h</div><div class="domain-descriptions"><span class="desc-text">"Arabic/Urdu/Uyghur"</span> <span class="translate-text"><i>Emirates</i></span></div><div class="domain-contact">💰 300 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="1000" data-email="premium@domains.com" data-tags="All Names" data-puny="false" data-source="bob"><div class="domain-puny">blockchain</div><div class="domain-contact">💰 1000 <button class="copy-email-btn" onclick="copyEmail(event, 'premium@domains.com')" title="Copy premium@domains.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="200" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="bob"><div class="domain-puny">web3domain</div><div class="domain-contact">💰 200 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="400" data-email="seller@example.com" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true" data-source="bob"><div class="domain-unicode">испытание</div><div class="domain-puny">xn--80akhbyknj4f</div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>trial</i></span></div><div class="domain-contact">💰 400 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="nb"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/example">example</a></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="seller@example.com" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true" data-source="nb"><div class="domain-unicode">пример</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/xn--e1afmkfd">xn--e1afmkfd</a></div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>example</i></span></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="contact@domain.com" data-tags="All Names" data-puny="false" data-source="nb"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/testdomain">testdomain</a></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'contact@domain.com')" title="Copy contact@domain.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="owner@mail.com" data-tags="PUNY_IDNA,Arabic, All Names" data-puny="true" data-source="nb"><div class="domain-unicode">مصر</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/xn--wgbh1c">xn--wgbh1c</a></div><div class="domain-descriptions"><span class="desc-text">"Arabic/Urdu/Uyghur"</span> <span class="translate-text"><i>Egypt</i></span></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'owner@mail.com')" title="Copy owner@mail.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="demo@example.com" data-tags="All Names" data-puny="false" data-source="nb"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/demo-name">demo-name</a></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'demo@example.com')" title="Copy demo@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="nb"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/myname">myname</a></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="seller@example.com" data-tags="PUNY_IDNA,Arabic, All Names" data-puny="true" data-source="nb"><div class="domain-unicode">امارات</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/xn--mgbaam7a8h">xn--mgbaam7a8h</a></div><div class="domain-descriptions"><span class="desc-text">"Arabic/Urdu/Uyghur"</span> <span class="translate-text"><i>Emirates</i></span></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="premium@domains.com" data-tags="All Names" data-puny="false" data-source="nb"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/blockchain">blockchain</a></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'premium@domains.com')" title="Copy premium@domains.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="nb"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/web3domain">web3domain</a></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="" data-email="seller@example.com" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true" data-source="nb"><div class="domain-unicode">испытание</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://www.namebase.io/domains/xn--80akhbyknj4f">xn--80akhbyknj4f</a></div><div class="domain-descriptions"><span class="desc-text">"Cyrillic (Russian/Ukrainian)"</span> <span class="translate-text"><i>trial</i></span></div><div class="domain-contact"><button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="100.0" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="ss"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/example">example</a></div><div class="domain-contact">💰 100.0 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="250.0" data-email="seller@example.com" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true" data-source="ss"><div class="domain-unicode">пример</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/xn--e1afmkfd">xn--e1afmkfd</a></div><div class="domain-contact">💰 250.0 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="500.0" data-email="owner@mail.com" data-tags="PUNY_IDNA,Arabic, All Names" data-puny="true" data-source="ss"><div class="domain-unicode">مصر</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/xn--wgbh1c">xn--wgbh1c</a></div><div class="domain-contact">💰 500.0 <button class="copy-email-btn" onclick="copyEmail(event, 'owner@mail.com')" title="Copy owner@mail.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="75.0" data-email="demo@example.com" data-tags="All Names" data-puny="false" data-source="ss"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/demo-name">demo-name</a></div><div class="domain-contact">💰 75.0 <button class="copy-email-btn" onclick="copyEmail(event, 'demo@example.com')" title="Copy demo@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="300.0" data-email="seller@example.com" data-tags="PUNY_IDNA,Arabic, All Names" data-puny="true" data-source="ss"><div class="domain-unicode">امارات</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/xn--mgbaam7a8h">xn--mgbaam7a8h</a></div><div class="domain-contact">💰 300.0 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="1000.0" data-email="premium@domains.com" data-tags="All Names" data-puny="false" data-source="ss"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/blockchain">blockchain</a></div><div class="domain-contact">💰 1000.0 <button class="copy-email-btn" onclick="copyEmail(event, 'premium@domains.com')" title="Copy premium@domains.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="200.0" data-email="seller@example.com" data-tags="All Names" data-puny="false" data-source="ss"><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/web3domain">web3domain</a></div><div class="domain-contact">💰 200.0 <button class="copy-email-btn" onclick="copyEmail(event, 'seller@example.com')" title="Copy seller@example.com">eml</button></div></span></div><div class="col"><span class="domain-with-contact" data-price="400.0" data-email="owner@mail.com" data-tags="PUNY_IDNA,Cyrillic, All Names" data-puny="true" data-source="ss"><div class="domain-unicode">испытание</div><div class="domain-puny"><a target="_blank" rel="noreferrer" href="https://shakestation.io/domain/xn--80akhbyknj4f">xn--80akhbyknj4f</a></div><div class="domain-contact">💰 400.0 <button class="copy-email-btn" onclick="copyEmail(event, 'owner@mail.com')" title="Copy owner@mail.com">eml</button></div></span></div></div>
+</div>
+<script>
+let darkMode = true;
+let buyNowOnlyActive = false;
+
+// Initialize dark mode on load
+document.body.classList.add('dark-mode');
+
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    document.body.classList.toggle("dark-mode");
+}
+const modeToggle = document.getElementById('mode-toggle');
+if (modeToggle) {
+    modeToggle.addEventListener('click', toggleDarkMode);
+}
+
+// 3-way theme cycling
+let currentTheme = 0; // 0=light, 1=dark, 2=custom
+const themeNames = ['☀️ Light', '🌙 Dark', '🎨 Custom'];
+const themeClasses = ['light-mode', 'dark-mode', 'custom-mode'];
+
+function cycleTheme() {
+    document.body.classList.remove(...themeClasses);
+    currentTheme = (currentTheme + 1) % 3;
+    document.body.classList.add(themeClasses[currentTheme]);
+    document.getElementById('themeBtn').textContent = themeNames[currentTheme];
+}
+
+// Initialize to light mode
+document.body.classList.remove('dark-mode');
+document.body.classList.add('light-mode');
+
+function toggleBuyNowOnly() {
+    buyNowOnlyActive = !buyNowOnlyActive;
+    const btn = document.getElementById('buy-now-only');
+    if (buyNowOnlyActive) {
+        btn.classList.add('active');
+        btn.textContent = '💰 Buy Now Active';
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = '💰 Buy Now Only';
+    }
+    filterDomainsWithPagination();
+}
+
+// Grid/List toggle
+const toggleViewBtn = document.getElementById('toggle-view');
+if (toggleViewBtn) {
+    toggleViewBtn.addEventListener('click', function() {
+        const grids = document.querySelectorAll('.grid');
+        grids.forEach(grid => grid.classList.toggle('list-view'));
+        this.textContent = document.querySelector('.grid.list-view') ? '📋 List' : '📊 Grid';
+    });
+}
+
+// Description toggle
+function toggleDescriptions() {
+    const descToggleBtn = document.getElementById('desc-toggle');
+    document.body.classList.toggle('hide-descriptions');
+    if (document.body.classList.contains('hide-descriptions')) {
+        descToggleBtn.textContent = 'Show Descripts';
+    } else {
+        descToggleBtn.textContent = 'Hide Descripts';
+    }
+}
+
+document.getElementById("zoom-in").addEventListener("click", function() {
+    document.body.style.fontSize = parseInt(window.getComputedStyle(document.body).fontSize) + 3 + "px";
+});
+document.getElementById("zoom-out").addEventListener("click", function() {
+    document.body.style.fontSize = parseInt(window.getComputedStyle(document.body).fontSize) - 3 + "px";
+});
+
+let sortState = 0;
+const sortButton = document.getElementById("sort-tlds");
+sortButton.addEventListener("click", function() {
+    sortState = (sortState + 1) % 5;
+    var grid = document.querySelector('.grid');
+    if (grid) {
+        var items = Array.from(grid.querySelectorAll('.col'));
+        
+        switch(sortState) {
+            case 0:
+                for (let i = items.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [items[i], items[j]] = [items[j], items[i]];
+                }
+                this.textContent = 'Sort: Random';
+                break;
+            case 1:
+                items.sort((a, b) => a.textContent.toLowerCase().localeCompare(b.textContent.toLowerCase()));
+                this.textContent = 'Sort: A-Z ▲';
+                break;
+            case 2:
+                items.sort((a, b) => b.textContent.toLowerCase().localeCompare(a.textContent.toLowerCase()));
+                this.textContent = 'Sort: Z-A ▼';
+                break;
+            case 3:
+                items.sort((a, b) => {
+                    const priceA = parseFloat(a.querySelector('.domain-with-contact')?.dataset?.price || '999999');
+                    const priceB = parseFloat(b.querySelector('.domain-with-contact')?.dataset?.price || '999999');
+                    return priceA - priceB;
+                });
+                this.textContent = 'Sort: Price ▲';
+                break;
+            case 4:
+                items.sort((a, b) => {
+                    const priceA = parseFloat(a.querySelector('.domain-with-contact')?.dataset?.price || '0');
+                    const priceB = parseFloat(b.querySelector('.domain-with-contact')?.dataset?.price || '0');
+                    return priceB - priceA;
+                });
+                this.textContent = 'Sort: Price ▼';
+                break;
+        }
+        
+        grid.innerHTML = '';
+        items.forEach(item => grid.appendChild(item));
+    }
+});
+
+function copyEmail(event, email) {
+    event.preventDefault();
+    event.stopPropagation();
+    navigator.clipboard.writeText(email).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = originalText; }, 1000);
+    });
+}
+
+function filterDomains() {
+    const searchInput = document.getElementById('search-input').value.toLowerCase();
+    const minPrice = parseFloat(document.getElementById('min-price').value) || null;
+    const maxPrice = parseFloat(document.getElementById('max-price').value) || null;
+    const tagFilter = document.getElementById('tag-filter').value;
+    
+    const items = document.querySelectorAll('.col');
+    
+    items.forEach(item => {
+        const domainSpan = item.querySelector('.domain-with-contact');
+        if (!domainSpan) {
+            item.style.display = 'none';
+            return;
+        }
+        
+        // Text search
+        const domainText = item.textContent.toLowerCase();
+        let textMatch = searchInput === '' || domainText.includes(searchInput);
+        
+        // Price filter
+        let priceMatch = true;
+        if (minPrice !== null || maxPrice !== null) {
+            const priceData = domainSpan.dataset.price;
+            if (priceData) {
+                const price = parseFloat(priceData);
+                if (minPrice !== null && price < minPrice) priceMatch = false;
+                if (maxPrice !== null && price > maxPrice) priceMatch = false;
+            } else {
+                priceMatch = false;
+            }
+        }
+        
+        // Buy Now Only filter (button or dropdown)
+        let buyNowMatch = true;
+        if (buyNowOnlyActive || tagFilter === '__BUY_NOW__') {
+            // Check if domain has marketplace link (ss or nb source)
+            const source = domainSpan.dataset.source || '';
+            const hasMarketplaceLink = (source === 'ss' || source === 'nb');
+            // Also check if there's an actual <a> tag with href (marketplace link)
+            const hasLink = item.querySelector('a[href*="shakestation.io"], a[href*="namebase.io"]');
+            if (!hasMarketplaceLink && !hasLink) {
+                buyNowMatch = false;
+            }
+        }
+        
+        // Tag filter with No PUNY and Buy Now support
+        let tagMatch = true;
+        if (tagFilter) {
+            if (tagFilter === '__NO_PUNY__') {
+                // Special case: hide punycode domains
+                const isPuny = domainSpan.dataset.puny === 'true';
+                if (isPuny) {
+                    tagMatch = false;
+                }
+            } else if (tagFilter === '__BUY_NOW__') {
+                // Already handled in buyNowMatch above
+                tagMatch = true;
+            } else {
+                // Regular tag filtering
+                const tags = (domainSpan.dataset.tags || '').split(',').map(t => t.trim());
+                tagMatch = tags.includes(tagFilter);
+            }
+        }
+        
+        item.style.display = (textMatch && priceMatch && buyNowMatch && tagMatch) ? '' : 'none';
+    });
+}
+
+function searchNames() {
+    filterDomainsWithPagination();
+}
+
+document.getElementById('search-input').addEventListener('keyup', filterDomainsWithPagination);
+document.getElementById('min-price').addEventListener('input', filterDomainsWithPagination);
+document.getElementById('max-price').addEventListener('input', filterDomainsWithPagination);
+document.getElementById('clear-filters').addEventListener('click', function() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('min-price').value = '';
+    document.getElementById('max-price').value = '';
+    document.getElementById('tag-filter').value = '';
+    if (buyNowOnlyActive) {
+        toggleBuyNowOnly(); // Turn off buy-now filter
+    }
+    filterDomainsWithPagination();
+});
+
+// Pagination
+let currentPage = 1;
+let itemsPerPage = 100;
+let allVisibleItems = [];
+
+function updatePagination() {
+    const perPageSelect = document.getElementById('per-page');
+    const value = perPageSelect.value;
+    itemsPerPage = value === 'all' ? Infinity : parseInt(value);
+    currentPage = 1;
+    showPage();
+}
+
+function showPage() {
+    const items = document.querySelectorAll('.col');
+    allVisibleItems = Array.from(items).filter(item => item.style.display !== 'none');
+    
+    if (itemsPerPage === Infinity) {
+        // Show all visible items
+        allVisibleItems.forEach(item => {
+            item.style.display = '';
+        });
+        document.getElementById('prev-page').disabled = true;
+        document.getElementById('next-page').disabled = true;
+        document.getElementById('page-info').textContent = `Showing all ${allVisibleItems.length} names`;
+        document.getElementById('go-to-page').disabled = true;
+        return;
+    }
+    
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    // Hide all first
+    items.forEach(item => {
+        if (item.style.display !== 'none') {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Show current page
+    allVisibleItems.slice(start, end).forEach(item => {
+        item.style.display = '';
+    });
+    
+    // Update pagination controls
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage >= totalPages;
+    
+    // Enhanced page info with item range
+    const displayStart = allVisibleItems.length > 0 ? start + 1 : 0;
+    const displayEnd = Math.min(end, allVisibleItems.length);
+    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages} (showing ${displayStart}-${displayEnd} of ${allVisibleItems.length})`;
+    
+    // Update go-to-page input
+    const goToPageInput = document.getElementById('go-to-page');
+    goToPageInput.max = totalPages;
+    goToPageInput.disabled = false;
+}
+
+function filterDomainsWithPagination() {
+    filterDomains();
+    currentPage = 1;
+    showPage();
+}
+
+document.getElementById('per-page').addEventListener('change', updatePagination);
+
+function goToPage() {
+    const input = document.getElementById('go-to-page');
+    const page = parseInt(input.value);
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        showPage();
+        window.scrollTo(0, 0);
+    } else if (page > totalPages && totalPages > 0) {
+        // Jump to last page if input exceeds total
+        currentPage = totalPages;
+        showPage();
+        window.scrollTo(0, 0);
+        input.value = totalPages;
+    }
+}
+
+// Allow Enter key to trigger Go to page
+document.getElementById('go-to-page').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        goToPage();
+    }
+});
+
+document.getElementById('prev-page').addEventListener('click', function() {
+    if (currentPage > 1) {
+        currentPage--;
+        showPage();
+        window.scrollTo(0, 0);
+    }
+});
+document.getElementById('next-page').addEventListener('click', function() {
+    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        showPage();
+        window.scrollTo(0, 0);
+    }
+});
+
+// Initialize - show all domains with pagination
+currentPage = 1;
+filterDomainsWithPagination();
+</script>
+</body>
+</html>

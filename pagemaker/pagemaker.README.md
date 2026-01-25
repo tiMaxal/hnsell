@@ -65,6 +65,11 @@ python pagemaker2.py
 
 - **Navigation Bar** - Tag-based filtering (All Names, PUNY_IDNA, 3L, CJK, etc.)
 - **Search Bar** - Real-time name filtering with price range inputs
+- **Pagination Controls** - Page through large domain lists with customizable items-per-page
+  - Per page options: 50, 100, 500, or All
+  - Previous/Next buttons with current page indicator
+  - "Go to page" direct navigation
+  - Shows current range (e.g., "showing 1-100 of 453")
 - **Grid/List Toggle** - Switch between compact grid and detailed list views
 - **Marketplace Links** - Direct links to Namebase/Shakestation listings
 - **Dark Mode** - User-controlled theme switching
@@ -223,7 +228,7 @@ pip install -r requirements.txt
 ## File Locations
 
 ```
-hnsell[junct]/
+./  (repository root)
 ├── pagemaker/
 │   ├── pagemaker2.py          ← This application
 │   └── pagemaker.README.md    ← This file

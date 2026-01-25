@@ -292,7 +292,76 @@ class Puny2UniConverter:
         
         return unicode_str
     
-    def convert_domain(self, domain, translate=False, target_lang='en', verbose=True):
+    def add_categorization_tags(self, domain, unicode_val):
+        """Add categorization tags for domain (1D, 1L, 1C, 2D, 2L, 2C, etc.)
+        Returns list of tags"""
+        tags = []
+        
+        def is_pure_alpha(s):
+            return str(s).isalpha()
+        
+        # Determine display length - use unicode for punycode domains
+        if str(domain).startswith('xn--') and unicode_val:
+            display_length = len(str(unicode_val))
+            is_punycode = True
+        else:
+            display_length = len(str(domain))
+            is_punycode = False
+        
+        # Single character tags (1D, 1L, 1C)
+        if display_length == 1:
+            if str(domain).isdigit():
+                tags.append('1D')
+            elif is_pure_alpha(domain) and not is_punycode:
+                tags.append('1L')
+            else:
+                tags.append('1C')  # Single char emoji/unicode
+        
+        # Two character tags (2D, 2L, 2C)
+        elif display_length == 2:
+            if str(domain).isdigit():
+                tags.append('2D')
+            elif is_pure_alpha(domain) and not is_punycode:
+                tags.append('2L')
+            else:
+                tags.append('2C')  # Two char emoji/unicode
+        
+        # Three character tags (3D, 3L, 3C)
+        elif display_length == 3:
+            if str(domain).isdigit():
+                tags.append('3D')
+            elif is_pure_alpha(domain):
+                tags.append('3L')
+            else:
+                tags.append('3C')
+        
+        # Four character tags (4D, 4L, 4C)
+        elif display_length == 4:
+            if str(domain).isdigit():
+                tags.append('4D')
+            elif is_pure_alpha(domain):
+                tags.append('4L')
+            else:
+                tags.append('4C')
+        
+        # Five character tags (5D, 5L, 5C)
+        elif display_length == 5:
+            if str(domain).isdigit():
+                tags.append('5D')
+            elif is_pure_alpha(domain):
+                tags.append('5L')
+            else:
+                tags.append('5C')
+        
+        # Six/Seven digit tags
+        elif display_length == 6 and str(domain).isdigit():
+            tags.append('6D')
+        elif display_length == 7 and str(domain).isdigit():
+            tags.append('7D')
+        
+        return tags
+    
+    def generate_description(self, unicode_str, validation_tag):
         """Convert a single domain and optionally translate"""
         domain = domain.strip()
         
@@ -304,13 +373,17 @@ class Puny2UniConverter:
             # Punycode to Unicode
             unicode_str, detected_lang, validation = self.punycode_to_unicode(domain)
             
+            # Add categorization tags
+            tags = self.add_categorization_tags(domain, unicode_str)
+            
             result = {
                 'input': domain,
                 'output': unicode_str,
                 'direction': 'puny→uni',
                 'language': detected_lang,
                 'validation': validation,
-                'translation': None
+                'translation': None,
+                'tags': tags
             }
             
             if verbose:
@@ -347,13 +420,17 @@ class Puny2UniConverter:
             punycode_str = self.unicode_to_punycode(domain)
             detected_lang, _ = self.detect_language(domain)
             
+            # Add categorization tags
+            tags = self.add_categorization_tags(domain, domain)  # For unicode, domain is the display
+            
             result = {
                 'input': domain,
                 'output': punycode_str,
                 'direction': 'uni→puny',
                 'language': detected_lang,
                 'validation': 'N/A',
-                'translation': None
+                'translation': None,
+                'tags': tags
             }
             
             if verbose:
@@ -605,11 +682,13 @@ class Puny2UniConverter:
                 existing_unicode = str(row.get('unicode', '')).strip() if 'unicode' in df.columns else ''
                 existing_descript = str(row.get('descript-IDNA', row.get('description', ''))).strip()
                 existing_translate = str(row.get('translate-IDNA', '')).strip()
+                existing_tags = str(row.get('tags', '')).strip() if 'tags' in df.columns else ''
                 
                 results.append({
                     'unicode': existing_unicode if existing_unicode.lower() != 'nan' else '',
                     'descript-IDNA': existing_descript if existing_descript.lower() != 'nan' else '',
-                    'translate-IDNA': existing_translate if existing_translate.lower() != 'nan' else ''
+                    'translate-IDNA': existing_translate if existing_translate.lower() != 'nan' else '',
+                    'tags': existing_tags if existing_tags.lower() != 'nan' else ''
                 })
                 
                 # Show progress with skip count
@@ -627,6 +706,7 @@ class Puny2UniConverter:
                 unicode_val = result['output']
                 lang_name = result.get('language', '')
                 translation = result.get('translation', '')
+                tags = result.get('tags', [])
                 
                 # Clean up unicode string (remove escape sequences)
                 if unicode_val:
@@ -638,13 +718,15 @@ class Puny2UniConverter:
                 results.append({
                     'unicode': unicode_val if unicode_val != domain else '',
                     'descript-IDNA': lang_name if lang_name else '',
-                    'translate-IDNA': translation if translation else ''
+                    'translate-IDNA': translation if translation else '',
+                    'tags': ','.join(tags) if tags else ''
                 })
             else:
                 results.append({
                     'unicode': '',
                     'descript-IDNA': '',
-                    'translate-IDNA': ''
+                    'translate-IDNA': '',
+                    'tags': ''
                 })
             
             # Show progress with translation count
@@ -662,18 +744,19 @@ class Puny2UniConverter:
         
         df['descript-IDNA'] = [r['descript-IDNA'] for r in results]
         df['translate-IDNA'] = [r['translate-IDNA'] for r in results]
+        df['tags'] = [r['tags'] for r in results]
         
         # Arrange columns appropriately
         if is_shakestation:
             # Preserve first 6 columns for Shakestation
             first_six = original_cols[:6] if len(original_cols) >= 6 else original_cols
-            remaining_original = [col for col in original_cols[6:] if col not in ['unicode', 'descript-IDNA', 'translate-IDNA']]
+            remaining_original = [col for col in original_cols[6:] if col not in ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
             
             # Build final column order
             if already_processed:
-                new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA']
+                new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
             else:
-                new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA']
+                new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
             
             final_cols = first_six + remaining_original + new_cols
             # Remove duplicates while preserving order
@@ -682,7 +765,7 @@ class Puny2UniConverter:
             df = df[final_cols]
         else:
             # For other formats, append new columns at the end
-            new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA']
+            new_cols = ['unicode', 'descript-IDNA', 'translate-IDNA', 'tags']
             other_cols = [col for col in df.columns if col not in new_cols]
             df = df[other_cols + new_cols]
         

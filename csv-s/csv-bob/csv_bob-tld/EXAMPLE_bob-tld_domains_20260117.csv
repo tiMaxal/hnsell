@@ -1,0 +1,11 @@
+domains,unicode,descript-IDNA,translate-IDNA,tags
+example,,,,
+xn--e1afmkfd,пример,Cyrillic (Russian/Ukrainian),example,"PUNY_IDNA,Cyrillic"
+testdomain,,,,
+xn--wgbh1c,مصر,Arabic/Urdu/Uyghur,Egypt,"PUNY_IDNA,Arabic"
+demo-name,,,,
+myname,,,,
+xn--mgbaam7a8h,امارات,Arabic/Urdu/Uyghur,Emirates,"PUNY_IDNA,Arabic"
+blockchain,,,,
+web3domain,,,,
+xn--80akhbyknj4f,испытание,Cyrillic (Russian/Ukrainian),trial,"PUNY_IDNA,Cyrillic"

@@ -3,6 +3,11 @@ csv-s/**/*.csv
 # EXCEPT example files (explicitly allow these)
 !csv-s/**/EXAMPLE_*.csv
 
+# Ignore settings, profiles, and logs in hnsell_data/
+hnsell_data/hnsell_settings.json
+hnsell_data/hnsell_profile_*.json
+hnsell_data/hnsell_processing.log
+
 # Ignore 'ai-hist'
 ai_hist_hnsell/*
 

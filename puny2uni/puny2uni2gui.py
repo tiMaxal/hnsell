@@ -325,6 +325,11 @@ class Puny2UniGUI:
             output_lines.append(f"Input (Unicode):   {result['input']}")
             output_lines.append(f"Output (Punycode): {result['output']}")
         
+        # Show tags (new feature!)
+        if result.get('tags'):
+            tags_str = ', '.join(result['tags'])
+            output_lines.append(f"Tags:              {tags_str}")
+        
         if result['language']:
             output_lines.append(f"Detected Language: {result['language']}")
         

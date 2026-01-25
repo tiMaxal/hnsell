@@ -11,7 +11,6 @@ from pathlib import Path
 import unicodedata
 import logging
 import traceback
-import json
 
 # Translation library (install: pip install deep-translator)
 try:
@@ -27,10 +26,7 @@ class HNSellFrame(wx.Frame):
         super().__init__(parent=None, title='HNSell - Handshake Domain Manager', size=(1000, 900))
         
         # Setup logging
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        data_dir = os.path.join(script_dir, 'hnsell_data')
-        os.makedirs(data_dir, exist_ok=True)
-        log_file = os.path.join(data_dir, 'hnsell_processing.log')
+        log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hnsell_processing.log')
         logging.basicConfig(
             filename=log_file,
             level=logging.DEBUG,
@@ -39,9 +35,6 @@ class HNSellFrame(wx.Frame):
         )
         logging.info('='*60)
         logging.info('HNSell started')
-        
-        # Settings file path
-        self.settings_file = os.path.join(data_dir, 'hnsell_settings.json')
         
         # Initialize translator
         self.translator = None
@@ -65,11 +58,6 @@ class HNSellFrame(wx.Frame):
         # Create bottom buttons
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        settings_btn = wx.Button(main_panel, label="Settings", size=(100, 40))
-        settings_btn.SetBackgroundColour(wx.Colour(0, 120, 215))  # Blue
-        settings_btn.SetForegroundColour(wx.Colour(255, 255, 255))
-        settings_btn.Bind(wx.EVT_BUTTON, self.on_settings)
-        
         help_btn = wx.Button(main_panel, label="Help", size=(100, 40))
         help_btn.SetBackgroundColour(wx.Colour(255, 255, 0))
         help_btn.Bind(wx.EVT_BUTTON, self.on_help)
@@ -83,7 +71,6 @@ class HNSellFrame(wx.Frame):
         exit_btn.SetForegroundColour(wx.Colour(255, 255, 255))
         exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)
         
-        button_sizer.Add(settings_btn, 0, wx.ALL, 5)
         button_sizer.Add(help_btn, 0, wx.ALL, 5)
         button_sizer.AddStretchSpacer()
         button_sizer.Add(process_btn, 0, wx.ALL, 5)
@@ -101,9 +88,6 @@ class HNSellFrame(wx.Frame):
         
         self.Centre()
         self.Show()
-        
-        # Load settings after UI is created
-        self.load_settings()
     
     def create_punytag_tab(self):
         panel = wx.Panel(self.notebook)
@@ -139,11 +123,8 @@ class HNSellFrame(wx.Frame):
         select_all_btn.Bind(wx.EVT_BUTTON, lambda e: [self.file_listbox.Select(i) for i in range(self.file_listbox.GetCount())])
         list_btn_sizer.Add(select_all_btn, 0, wx.ALL, 5)
         
-        def deselect_all_tab1(e):
-            for i in range(self.file_listbox.GetCount()):
-                self.file_listbox.SetSelection(i, False)
         select_none_btn = wx.Button(panel, label="Select None")
-        select_none_btn.Bind(wx.EVT_BUTTON, deselect_all_tab1)
+        select_none_btn.Bind(wx.EVT_BUTTON, lambda e: self.file_listbox.DeselectAll())
         list_btn_sizer.Add(select_none_btn, 0, wx.ALL, 5)
         
         remove_btn = wx.Button(panel, label="Remove Selected")
@@ -255,11 +236,8 @@ class HNSellFrame(wx.Frame):
         select_all_btn.Bind(wx.EVT_BUTTON, lambda e: [self.puny2uni_listbox.Select(i) for i in range(self.puny2uni_listbox.GetCount())])
         list_btn_sizer.Add(select_all_btn, 0, wx.ALL, 5)
         
-        def deselect_all_tab2(e):
-            for i in range(self.puny2uni_listbox.GetCount()):
-                self.puny2uni_listbox.SetSelection(i, False)
         select_none_btn = wx.Button(panel, label="Select None")
-        select_none_btn.Bind(wx.EVT_BUTTON, deselect_all_tab2)
+        select_none_btn.Bind(wx.EVT_BUTTON, lambda e: self.puny2uni_listbox.DeselectAll())
         list_btn_sizer.Add(select_none_btn, 0, wx.ALL, 5)
         
         remove_btn = wx.Button(panel, label="Remove Selected")
@@ -318,11 +296,8 @@ class HNSellFrame(wx.Frame):
         select_all_btn.Bind(wx.EVT_BUTTON, lambda e: [self.pagemaker_listbox.Select(i) for i in range(self.pagemaker_listbox.GetCount())])
         list_btn_sizer.Add(select_all_btn, 0, wx.ALL, 5)
         
-        def deselect_all_tab3(e):
-            for i in range(self.pagemaker_listbox.GetCount()):
-                self.pagemaker_listbox.SetSelection(i, False)
         select_none_btn = wx.Button(panel, label="Select None")
-        select_none_btn.Bind(wx.EVT_BUTTON, deselect_all_tab3)
+        select_none_btn.Bind(wx.EVT_BUTTON, lambda e: self.pagemaker_listbox.DeselectAll())
         list_btn_sizer.Add(select_none_btn, 0, wx.ALL, 5)
         
         remove_btn = wx.Button(panel, label="Remove Selected")
@@ -580,9 +555,7 @@ class HNSellFrame(wx.Frame):
                         if filename.endswith('.txt'):
                             files.append(os.path.join(root, filename))
             else:
-                for filename in os.listdir(folder):
-                    if filename.endswith('.txt'):
-                        files.append(os.path.join(folder, filename))
+                files = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith('.txt')]
             for file in files:
                 if file not in self.puny2uni_files:
                     self.puny2uni_files.append(file)
@@ -727,95 +700,6 @@ class HNSellFrame(wx.Frame):
             self.output_filename_entry.SetValue(dlg.GetPath())
         dlg.Destroy()
     
-    def on_settings(self, event):
-        """Show settings dialog for saving/loading favorite configurations"""
-        dlg = wx.Dialog(self, title="Settings Manager", size=(500, 450))
-        panel = wx.Panel(dlg)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        
-        # Profile selection
-        profile_box = wx.StaticBoxSizer(wx.VERTICAL, panel, "Settings Profiles")
-        profile_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        profile_label = wx.StaticText(panel, label="Profile:")
-        profile_sizer.Add(profile_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        
-        profile_choice = wx.Choice(panel, size=(200, -1))
-        self.refresh_profile_list(profile_choice)
-        profile_sizer.Add(profile_choice, 1, wx.ALL, 5)
-        
-        profile_box.Add(profile_sizer, 0, wx.EXPAND)
-        
-        # Profile name input with dropdown
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_label = wx.StaticText(panel, label="Profile name:")
-        name_sizer.Add(name_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        
-        profile_name = wx.ComboBox(panel, style=wx.CB_DROPDOWN, size=(200, -1))
-        # Populate with existing profile names
-        settings_dir = os.path.dirname(self.settings_file)
-        if os.path.exists(settings_dir):
-            for filename in os.listdir(settings_dir):
-                if filename.startswith('hnsell_profile_') and filename.endswith('.json'):
-                    existing_name = filename[15:-5]  # Remove 'hnsell_profile_' and '.json'
-                    profile_name.Append(existing_name)
-        name_sizer.Add(profile_name, 1, wx.ALL, 5)
-        
-        profile_box.Add(name_sizer, 0, wx.EXPAND)
-        
-        # Profile buttons
-        profile_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        save_btn = wx.Button(panel, label="💾 Save As")
-        save_btn.Bind(wx.EVT_BUTTON, lambda e: self.save_named_settings(profile_name.GetValue(), dlg))
-        profile_btn_sizer.Add(save_btn, 0, wx.ALL, 5)
-        
-        load_btn = wx.Button(panel, label="📂 Load")
-        load_btn.Bind(wx.EVT_BUTTON, lambda e: self.load_named_settings(profile_choice.GetStringSelection(), dlg))
-        profile_btn_sizer.Add(load_btn, 0, wx.ALL, 5)
-        
-        delete_btn = wx.Button(panel, label="🗑️ Delete")
-        delete_btn.SetBackgroundColour(wx.Colour(255, 107, 107))
-        delete_btn.SetForegroundColour(wx.Colour(255, 255, 255))
-        delete_btn.Bind(wx.EVT_BUTTON, lambda e: self.delete_named_settings(profile_choice.GetStringSelection(), profile_choice, dlg))
-        profile_btn_sizer.Add(delete_btn, 0, wx.ALL, 5)
-        
-        profile_box.Add(profile_btn_sizer, 0, wx.ALIGN_CENTER)
-        sizer.Add(profile_box, 0, wx.ALL | wx.EXPAND, 10)
-        
-        # Settings info
-        info_box = wx.StaticBoxSizer(wx.VERTICAL, panel, "Saved Settings Include")
-        settings_list = [
-            "• Current tab selection",
-            "• Output options (rename, sort, delete)",
-            "• Translation settings",
-            "• PageMaker theme, colors, display options",
-            "• Sort preferences & auto-email",
-            "• Selected HTML files (footer/credits/update)",
-            "• File lists and selections"
-        ]
-        for item in settings_list:
-            text = wx.StaticText(panel, label=item)
-            info_box.Add(text, 0, wx.ALL, 2)
-        
-        sizer.Add(info_box, 1, wx.ALL | wx.EXPAND, 10)
-        
-        close_btn = wx.Button(panel, label="Close")
-        close_btn.Bind(wx.EVT_BUTTON, lambda e: dlg.Close())
-        sizer.Add(close_btn, 0, wx.ALIGN_CENTER | wx.ALL, 10)
-        
-        panel.SetSizer(sizer)
-        
-        # Add ESC key handler to close dialog
-        def on_key(event):
-            if event.GetKeyCode() == wx.WXK_ESCAPE:
-                dlg.Close()
-            event.Skip()
-        dlg.Bind(wx.EVT_CHAR_HOOK, on_key)
-        
-        dlg.ShowModal()
-        dlg.Destroy()
-    
     def on_help(self, event):
         help_text = """HNSell - Handshake Domain Manager
 
@@ -857,7 +741,6 @@ OUTPUT:
             self.process_pagemaker()
     
     def on_exit(self, event):
-        self.save_settings()
         self.Close()
     
     # CSV source detection
@@ -1121,25 +1004,10 @@ OUTPUT:
         skipped_count = 0
         
         selections = self.file_listbox.GetSelections()
-        total_files = len(selections)
-        
-        # Create progress dialog
-        progress = wx.ProgressDialog(
-            "Processing Files",
-            "Processing CSV files...",
-            maximum=total_files,
-            parent=self,
-            style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_ELAPSED_TIME | wx.PD_REMAINING_TIME
-        )
-        
-        for file_num, idx in enumerate(selections):
+        for idx in selections:
             file_info = self.file_data[idx]
             filepath = file_info['path']
             source_type = file_info['source']
-            
-            # Update progress
-            progress.Update(file_num, f"Processing {os.path.basename(filepath)} ({file_num + 1}/{total_files})")
-            
             logging.info(f'Processing file: {os.path.basename(filepath)} (type: {source_type})')
             
             file_dir = os.path.dirname(filepath)
@@ -1186,24 +1054,15 @@ OUTPUT:
                     wx.MessageBox(f"Processing for {source_type} not yet fully implemented", "Info", wx.OK | wx.ICON_INFORMATION)
                     continue
                 
-                # Rename original file if checkbox is checked
                 if self.rename_orig_var.GetValue():
                     orig_name = f"{file_base}_orig{file_ext}"
                     orig_path = os.path.join(file_dir, orig_name)
-                    if os.path.exists(filepath):  # Check source file exists
-                        os.rename(filepath, orig_path)
+                    os.rename(filepath, orig_path)
                 
-                # Delete original file if checkbox is checked (and rename created _orig file)
                 if self.delete_orig_var.GetValue():
-                    if self.rename_orig_var.GetValue():
-                        # Delete the _orig file created by rename
-                        orig_path = os.path.join(file_dir, f"{file_base}_orig{file_ext}")
-                        if os.path.exists(orig_path):
-                            os.remove(orig_path)
-                    else:
-                        # Delete the original file directly (no rename happened)
-                        if os.path.exists(filepath):
-                            os.remove(filepath)
+                    orig_path = os.path.join(file_dir, f"{file_base}_orig{file_ext}")
+                    if os.path.exists(orig_path):
+                        os.remove(orig_path)
                 
                 logging.info(f'  Successfully processed: {output_name}')
                 processed_count += 1
@@ -1214,10 +1073,7 @@ OUTPUT:
                 logging.error(f'  Error type: {type(e).__name__}')
                 logging.error(f'  Error message: {str(e)}')
                 logging.error(f'  Full traceback:\n{error_trace}')
-                wx.MessageBox(f"Error processing {file_name}:\n{str(e)}\n\nSee hnsell_data/hnsell_processing.log for details", "Error", wx.OK | wx.ICON_ERROR)
-        
-        progress.Update(total_files, "Processing complete!")
-        progress.Destroy()
+                wx.MessageBox(f"Error processing {file_name}:\n{str(e)}\n\nSee hnsell_processing.log for details", "Error", wx.OK | wx.ICON_ERROR)
         
         logging.info(f'Punytag processing complete: {processed_count} processed, {skipped_count} skipped')
         logging.info('='*60)
@@ -1225,7 +1081,7 @@ OUTPUT:
         result_msg = f"Processed {processed_count} file(s)"
         if skipped_count > 0:
             result_msg += f"\nSkipped {skipped_count} file(s) (already processed or marked as original)"
-        result_msg += f"\n\nLog file: hnsell_data/hnsell_processing.log"
+        result_msg += f"\n\nLog file: hnsell_processing.log"
         wx.MessageBox(result_msg, "Complete", wx.OK | wx.ICON_INFORMATION)
     
     def process_bob_tr(self, filepath, output_path):
@@ -1449,20 +1305,7 @@ OUTPUT:
         df.to_csv(output_path, index=False)
     
     def process_bob_tld(self, filepath, output_path):
-        # First, try to detect if file has headers by peeking at first line
-        with open(filepath, 'r', encoding='utf-8') as f:
-            first_line = f.readline().strip()
-        
-        # If first line contains 'domains' as a column name (header row), use header=0
-        # Otherwise, treat as headerless single-column file
-        if first_line.lower().startswith('domains') and (',' in first_line or '\t' in first_line):
-            df = pd.read_csv(filepath)
-            # Check if 'domains' column exists
-            if 'domains' not in df.columns:
-                raise ValueError("No 'domains' column found in Bob TLD CSV")
-        else:
-            # Headerless file - treat as single column
-            df = pd.read_csv(filepath, header=None, names=['domains'])
+        df = pd.read_csv(filepath, header=None, names=['domains'])
         
         if 'domains' not in df.columns:
             raise ValueError("No 'domains' column found in Bob TLD CSV")
@@ -1515,9 +1358,7 @@ OUTPUT:
         if skipped_count > 0:
             print(f"ℹ Skipped {skipped_count} domains (already have descript/translate values)")
         
-        # Preserve original columns (like price/email) if they exist
-        col_order = ['domains', 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags'] + [col for col in df.columns if col not in ['domains', 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
-        df = df[col_order]
+        df = df[['domains', 'unicode', 'descript-IDNA', 'translate-IDNA', 'tags']]
         
         df.to_csv(output_path, index=False)
     
@@ -1673,35 +1514,22 @@ OUTPUT:
                     lines = f.readlines()
                 
                 results = []
-                
-                # Process each line independently - detect format per line
-                for line in lines:
-                    domain = line.strip()
-                    if not domain:
-                        continue
-                    
-                    # Detect domain format and convert appropriately
-                    if domain.startswith('xn--'):
-                        # Punycode -> Unicode
-                        unicode_val = self.punycode_convert_validate(domain)[0]
-                        results.append(unicode_val if unicode_val else domain)
-                    elif any(ord(c) > 127 for c in domain):
-                        # Unicode -> Punycode (contains non-ASCII)
-                        puny_val = self.unicode_to_punycode(domain)
-                        results.append(puny_val)
-                    else:
-                        # Plain ASCII - no conversion needed
-                        results.append(domain)
-                
-                # Output filename based on first line's format
                 first_line = lines[0].strip() if lines else ''
+                
                 if first_line.startswith('xn--'):
+                    for line in lines:
+                        domain = line.strip()
+                        if domain:
+                            unicode_val = self.punycode_convert_validate(domain)[0]
+                            results.append(unicode_val if unicode_val else domain)
                     output_path = filepath.replace('.txt', '_uni.txt')
-                elif any(ord(c) > 127 for c in first_line):
-                    output_path = filepath.replace('.txt', '_puny.txt')
                 else:
-                    # Mixed or ASCII - use generic suffix
-                    output_path = filepath.replace('.txt', '_converted.txt')
+                    for line in lines:
+                        domain = line.strip()
+                        if domain:
+                            puny_val = self.unicode_to_punycode(domain)
+                            results.append(puny_val)
+                    output_path = filepath.replace('.txt', '_puny.txt')
                 
                 with open(output_path, 'w', encoding='utf-8') as f:
                     f.write('\n'.join(results))
@@ -1745,14 +1573,13 @@ OUTPUT:
         
         tags_sorted = ['All Names'] + sorted(set(tags_dict.keys()) - {'All Names'})
         
-        # Build single grid with all domains (no sections) - use only 'All Names' to avoid duplication
-        all_names_html = ''.join(f'<div class="col">{name}</div>' for name in tags_dict.get('All Names', []))
+        # Build single grid with all domains (no sections)
+        all_names_html = ''.join(f'<div class="col">{name}</div>' for tag in tags_sorted for name in tags_dict[tag])
         tag_groups_content = f'<div class="grid">{all_names_html}</div>'
         
         # Build tag dropdown options
         tag_options_html = '<option value="">All Names</option>'
         tag_options_html += '<option value="__NO_PUNY__">No PUNY</option>'
-        tag_options_html += '<option value="__BUY_NOW__">💰 Buy Now Only</option>'
         tag_options_html += '<option disabled>\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500</option>'
         for tag in tags_sorted:
             if tag != 'All Names':
@@ -1810,13 +1637,7 @@ OUTPUT:
         <input type="number" id="max-price" placeholder="Max price" step="0.01">
         <label for="tag-filter">Filter:</label>
         {navigation_links_html}
-        <button id="buy-now-only" onclick="toggleBuyNowOnly()">💰 Buy Now Only</button>
         <button id="clear-filters">Clear</button>
-    </div>
-    <div id="pagination-controls" style="text-align: center; padding: 0.5em; display: flex; justify-content: center; align-items: center; gap: 0.5em; flex-wrap: wrap;">
-        <button id="prev-page" disabled>← Prev</button>
-        <span id="page-info" style="margin: 0 0.5em;">Page 1</span>
-        <button id="next-page">Next →</button>
         <label for="per-page" style="margin-left: 1em;">Per page:</label>
         <select id="per-page">
             <option value="50">50</option>
@@ -1824,9 +1645,11 @@ OUTPUT:
             <option value="500">500</option>
             <option value="all">All</option>
         </select>
-        <label for="go-to-page">Go to:</label>
-        <input type="number" id="go-to-page" min="1" style="width: 60px;" />
-        <button onclick="goToPage()">Go</button>
+    </div>
+    <div id="pagination-controls" style="text-align: center; padding: 0.5em;">
+        <button id="prev-page" disabled>← Prev</button>
+        <span id="page-info" style="margin: 0 1em;">Page 1</span>
+        <button id="next-page">Next →</button>
     </div>
 </div>
 <div class="content">
@@ -1837,239 +1660,6 @@ OUTPUT:
 </html>"""
         
         return html_content
-    
-    def refresh_profile_list(self, choice_widget):
-        """Refresh the profile choice dropdown"""
-        choice_widget.Clear()
-        settings_dir = os.path.dirname(self.settings_file)
-        if os.path.exists(settings_dir):
-            for filename in os.listdir(settings_dir):
-                if filename.startswith('hnsell_profile_') and filename.endswith('.json'):
-                    profile_name = filename[15:-5]  # Remove 'hnsell_profile_' and '.json'
-                    choice_widget.Append(profile_name)
-        if choice_widget.GetCount() > 0:
-            choice_widget.SetSelection(0)
-    
-    def save_named_settings(self, profile_name, dialog):
-        """Save settings with a specific profile name"""
-        if not profile_name:
-            wx.MessageBox("Please enter a profile name", "Error", wx.OK | wx.ICON_WARNING)
-            return
-        
-        profile_file = os.path.join(os.path.dirname(self.settings_file), f'hnsell_profile_{profile_name}.json')
-        settings = self.get_current_settings()
-        
-        try:
-            with open(profile_file, 'w', encoding='utf-8') as f:
-                json.dump(settings, f, indent=2)
-            wx.MessageBox(f"Settings saved as '{profile_name}'!", "Success", wx.OK | wx.ICON_INFORMATION)
-            # Refresh the choice widget if it exists
-            for child in dialog.GetChildren():
-                if isinstance(child, wx.Panel):
-                    for widget in child.GetChildren():
-                        if isinstance(widget, wx.Choice):
-                            self.refresh_profile_list(widget)
-                            break
-        except Exception as e:
-            wx.MessageBox(f"Error saving profile: {e}", "Error", wx.OK | wx.ICON_ERROR)
-    
-    def load_named_settings(self, profile_name, dialog):
-        """Load settings from a specific profile"""
-        if not profile_name:
-            wx.MessageBox("Please select a profile to load", "Error", wx.OK | wx.ICON_WARNING)
-            return
-        
-        profile_file = os.path.join(os.path.dirname(self.settings_file), f'hnsell_profile_{profile_name}.json')
-        
-        if not os.path.exists(profile_file):
-            wx.MessageBox(f"Profile '{profile_name}' not found", "Error", wx.OK | wx.ICON_WARNING)
-            return
-        
-        try:
-            with open(profile_file, 'r', encoding='utf-8') as f:
-                settings = json.load(f)
-            self.apply_settings(settings)
-            wx.MessageBox(f"Settings loaded from '{profile_name}'!", "Success", wx.OK | wx.ICON_INFORMATION)
-        except Exception as e:
-            wx.MessageBox(f"Error loading profile: {e}", "Error", wx.OK | wx.ICON_ERROR)
-    
-    def delete_named_settings(self, profile_name, choice_widget, dialog):
-        """Delete a specific profile"""
-        if not profile_name:
-            wx.MessageBox("Please select a profile to delete", "Error", wx.OK | wx.ICON_WARNING)
-            return
-        
-        confirm = wx.MessageBox(f"Delete profile '{profile_name}'?", "Confirm Delete", wx.YES_NO | wx.ICON_QUESTION)
-        if confirm != wx.YES:
-            return
-        
-        profile_file = os.path.join(os.path.dirname(self.settings_file), f'hnsell_profile_{profile_name}.json')
-        
-        try:
-            if os.path.exists(profile_file):
-                os.remove(profile_file)
-                self.refresh_profile_list(choice_widget)
-                wx.MessageBox(f"Profile '{profile_name}' deleted!", "Success", wx.OK | wx.ICON_INFORMATION)
-        except Exception as e:
-            wx.MessageBox(f"Error deleting profile: {e}", "Error", wx.OK | wx.ICON_ERROR)
-    
-    def get_current_settings(self):
-        """Get current settings as dictionary"""
-        return {
-            # Current tab
-            'current_tab': self.notebook.GetSelection(),
-            
-            # Tab 1: Punytag Processor
-            'rename_orig': self.rename_orig_var.GetValue(),
-            'sort_to_subdirs': self.sort_to_subdirs_var.GetValue(),
-            'delete_orig': self.delete_orig_var.GetValue(),
-            'respect_existing': self.respect_existing_var.GetValue(),
-            'enable_translation': self.enable_translation_var.GetValue(),
-            'target_lang': self.target_lang_var.GetValue(),
-            
-            # Tab 1: File lists
-            'punytag_files': [{'path': f['path'], 'source': f['source']} for f in self.file_data],
-            
-            # Tab 2: File lists
-            'puny2uni_files': self.puny2uni_files,
-            
-            # Tab 3: PageMaker
-            'sort_state': self.sort_state,
-            'theme_selection': self.theme_var.GetSelection(),
-            'light_color': self.light_color_entry.GetValue(),
-            'dark_color': self.dark_color_entry.GetValue(),
-            'output_filename': self.output_filename_entry.GetValue(),
-            'list_all': self.list_all_var.GetValue(),
-            'include_descriptions': self.include_descriptions_var.GetValue(),
-            'auto_email': self.auto_email_entry.GetValue(),
-            
-            # Tab 3: File lists and HTML files
-            'pagemaker_files': self.pagemaker_files,
-            'footer_file': self.footer_file,
-            'credits_file': self.credits_file,
-            'html_to_update': self.html_to_update,
-            'custom_css_file': self.custom_css_file,
-        }
-    
-    def apply_settings(self, settings):
-        """Apply settings from dictionary"""
-        # Tab selection
-        if 'current_tab' in settings:
-            self.notebook.SetSelection(settings['current_tab'])
-        
-        # Tab 1: Punytag Processor
-        self.rename_orig_var.SetValue(settings.get('rename_orig', True))
-        self.sort_to_subdirs_var.SetValue(settings.get('sort_to_subdirs', False))
-        self.delete_orig_var.SetValue(settings.get('delete_orig', False))
-        self.respect_existing_var.SetValue(settings.get('respect_existing', True))
-        self.enable_translation_var.SetValue(settings.get('enable_translation', False))
-        self.target_lang_var.SetValue(settings.get('target_lang', 'en'))
-        
-        # Tab 1: File lists
-        if 'punytag_files' in settings:
-            self.file_listbox.Clear()
-            self.file_data = []
-            for file_info in settings['punytag_files']:
-                if os.path.exists(file_info['path']):
-                    self.file_data.append(file_info)
-                    display_text = f"[{file_info['source']}] {os.path.basename(file_info['path'])}"
-                    self.file_listbox.Append(display_text)
-        
-        # Tab 2: File lists
-        if 'puny2uni_files' in settings:
-            self.puny2uni_listbox.Clear()
-            self.puny2uni_files = []
-            for file_path in settings['puny2uni_files']:
-                if os.path.exists(file_path):
-                    self.puny2uni_files.append(file_path)
-                    self.puny2uni_listbox.Append(os.path.basename(file_path))
-        
-        # Tab 3: PageMaker
-        self.sort_state = settings.get('sort_state', 0)
-        sort_states = ["Random", "Alphabetical ▲", "Alphabetical ▼", "Price ▲", "Price ▼"]
-        self.sort_label.SetLabel(f"Current: {sort_states[self.sort_state]}")
-        
-        theme_selection = settings.get('theme_selection', 0)
-        self.theme_var.SetSelection(theme_selection)
-        self.light_color_entry.SetValue(settings.get('light_color', '#ccffff'))
-        self.dark_color_entry.SetValue(settings.get('dark_color', '#003366'))
-        self.output_filename_entry.SetValue(settings.get('output_filename', 'portfolio.html'))
-        self.list_all_var.SetValue(settings.get('list_all', False))
-        self.include_descriptions_var.SetValue(settings.get('include_descriptions', False))
-        self.auto_email_entry.SetValue(settings.get('auto_email', ''))
-        
-        # Tab 3: File lists
-        if 'pagemaker_files' in settings:
-            self.pagemaker_listbox.Clear()
-            self.pagemaker_files = []
-            for file_path in settings['pagemaker_files']:
-                if os.path.exists(file_path):
-                    self.pagemaker_files.append(file_path)
-                    self.pagemaker_listbox.Append(os.path.basename(file_path))
-        
-        # Tab 3: HTML files
-        self.footer_file = settings.get('footer_file')
-        if self.footer_file and os.path.exists(self.footer_file):
-            self.footer_label.SetLabel(os.path.basename(self.footer_file))
-        else:
-            self.footer_file = None
-            self.footer_label.SetLabel("No footer file selected")
-        
-        self.credits_file = settings.get('credits_file')
-        if self.credits_file and os.path.exists(self.credits_file):
-            self.credits_label.SetLabel(os.path.basename(self.credits_file))
-        else:
-            self.credits_file = None
-            self.credits_label.SetLabel("No credits file selected")
-        
-        self.html_to_update = settings.get('html_to_update')
-        if self.html_to_update and os.path.exists(self.html_to_update):
-            self.html_update_label.SetLabel(os.path.basename(self.html_to_update))
-        else:
-            self.html_to_update = None
-            self.html_update_label.SetLabel("No HTML file selected")
-        
-        self.custom_css_file = settings.get('custom_css_file')
-        if self.custom_css_file and os.path.exists(self.custom_css_file):
-            self.css_label.SetLabel(os.path.basename(self.custom_css_file))
-        else:
-            self.custom_css_file = None
-            self.css_label.SetLabel("No CSS file selected")
-        
-        # Fix 3-way theme color picker visibility
-        if theme_selection == 1:  # 3-way switch
-            self.color_picker_sizer.ShowItems(True)
-        else:
-            self.color_picker_sizer.ShowItems(False)
-        
-        # Force layout update
-        page = self.notebook.GetPage(2)  # PageMaker tab
-        page.Layout()
-        if hasattr(page, 'SetupScrolling'):
-            page.SetupScrolling(scroll_x=False, scroll_y=True, rate_x=20, rate_y=20)
-        
-        logging.info('Settings applied successfully')
-    
-    def load_settings(self):
-        """Load settings from JSON file"""
-        try:
-            if os.path.exists(self.settings_file):
-                with open(self.settings_file, 'r', encoding='utf-8') as f:
-                    settings = json.load(f)
-                self.apply_settings(settings)
-                logging.info('Settings loaded from hnsell_data/hnsell_settings.json')
-        except Exception as e:
-            logging.warning(f'Could not load settings: {e}')
-    
-    def save_settings(self):
-        """Save current settings to JSON file"""
-        try:
-            settings = self.get_current_settings()
-            with open(self.settings_file, 'w', encoding='utf-8') as f:
-                json.dump(settings, f, indent=2)
-            logging.info('Settings saved to hnsell_data/hnsell_settings.json')
-        except Exception as e:
-            logging.error(f'Could not save settings: {e}')
     
     def format_domain_link_wx(self, row, include_descriptions):
         """Format domain link with unicode → puny → descriptions → price/email layout"""
@@ -2139,7 +1729,7 @@ OUTPUT:
                 html_parts.append(f'<div class="domain-contact">{" ".join(contact_parts)}</div>')
             
             is_puny = "true" if name.startswith('xn--') else "false"
-            return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}" data-source="bob">' + ''.join(html_parts) + '</span>'
+            return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}">' + ''.join(html_parts) + '</span>'
         else:
             base_url = f"https://www.namebase.io/domains/{name}"
         
@@ -2177,15 +1767,11 @@ OUTPUT:
             html_parts.append(f'<div class="domain-contact">{" ".join(contact_parts)}</div>')
         
         is_puny = "true" if name.startswith('xn--') else "false"
-        return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}" data-source="{source}">' + ''.join(html_parts) + '</span>'
+        return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}">' + ''.join(html_parts) + '</span>'
     
     def get_portfolio_css_wx(self, theme_name):
         """Get CSS for portfolio page"""
-        # Get custom colors if 3-way theme
-        light_color = self.light_color_entry.GetValue() if theme_name == "3-way switch" else "#ccffff"
-        dark_color = self.dark_color_entry.GetValue() if theme_name == "3-way switch" else "#003366"
-        
-        css = """<style>
+        return """<style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     background-color: #ffffff;
@@ -2196,21 +1782,7 @@ body {
 body.dark-mode {
     background-color: #000000;
     color: #ffffff;
-}"""
-        
-        # Add 3-way theme CSS
-        if theme_name == "3-way switch":
-            css += f"""
-body.light-mode {{
-    background-color: {light_color};
-    color: #000000;
-}}
-body.custom-mode {{
-    background-color: {dark_color};
-    color: #ffffff;
-}}"""
-        
-        return css + """
+}
 .buttons-container {
     position: fixed;
     top: 20px;
@@ -2286,19 +1858,6 @@ body.hide-descriptions .domain-descriptions {
     color: inherit;
     cursor: pointer;
 }
-#buy-now-only {
-    padding: 8px 12px;
-    margin: 0 5px;
-    border: 2px solid currentColor;
-    border-radius: 8px;
-    background-color: rgba(255, 215, 0, 0.2);
-    cursor: pointer;
-    font-weight: bold;
-}
-#buy-now-only.active {
-    background-color: rgba(255, 215, 0, 0.6);
-    border-color: #FFD700;
-}
 .domain-with-contact {
     display: flex;
     flex-direction: column;
@@ -2361,13 +1920,8 @@ body.hide-descriptions .domain-descriptions {
     
     def get_portfolio_js_wx(self, theme_name):
         """Get JavaScript for portfolio page - adapted from hnsell.py"""
-        js_code = """<script>
+        return """<script>
 let darkMode = true;
-let buyNowOnlyActive = false;
-
-// Initialize dark mode on load
-document.body.classList.add('dark-mode');
-
 function toggleDarkMode() {
     darkMode = !darkMode;
     document.body.classList.toggle("dark-mode");
@@ -2375,41 +1929,6 @@ function toggleDarkMode() {
 const modeToggle = document.getElementById('mode-toggle');
 if (modeToggle) {
     modeToggle.addEventListener('click', toggleDarkMode);
-}
-"""
-        
-        # Add 3-way theme toggle function
-        if theme_name == "3-way switch":
-            js_code += """
-// 3-way theme cycling
-let currentTheme = 0; // 0=light, 1=dark, 2=custom
-const themeNames = ['☀️ Light', '🌙 Dark', '🎨 Custom'];
-const themeClasses = ['light-mode', 'dark-mode', 'custom-mode'];
-
-function cycleTheme() {
-    document.body.classList.remove(...themeClasses);
-    currentTheme = (currentTheme + 1) % 3;
-    document.body.classList.add(themeClasses[currentTheme]);
-    document.getElementById('themeBtn').textContent = themeNames[currentTheme];
-}
-
-// Initialize to light mode
-document.body.classList.remove('dark-mode');
-document.body.classList.add('light-mode');
-"""
-        
-        return js_code + """
-function toggleBuyNowOnly() {
-    buyNowOnlyActive = !buyNowOnlyActive;
-    const btn = document.getElementById('buy-now-only');
-    if (buyNowOnlyActive) {
-        btn.classList.add('active');
-        btn.textContent = '💰 Buy Now Active';
-    } else {
-        btn.classList.remove('active');
-        btn.textContent = '💰 Buy Now Only';
-    }
-    filterDomainsWithPagination();
 }
 
 // Grid/List toggle
@@ -2530,20 +2049,7 @@ function filterDomains() {
             }
         }
         
-        // Buy Now Only filter (button or dropdown)
-        let buyNowMatch = true;
-        if (buyNowOnlyActive || tagFilter === '__BUY_NOW__') {
-            // Check if domain has marketplace link (ss or nb source)
-            const source = domainSpan.dataset.source || '';
-            const hasMarketplaceLink = (source === 'ss' || source === 'nb');
-            // Also check if there's an actual <a> tag with href (marketplace link)
-            const hasLink = item.querySelector('a[href*="shakestation.io"], a[href*="namebase.io"]');
-            if (!hasMarketplaceLink && !hasLink) {
-                buyNowMatch = false;
-            }
-        }
-        
-        // Tag filter with No PUNY and Buy Now support
+        // Tag filter with No PUNY support
         let tagMatch = true;
         if (tagFilter) {
             if (tagFilter === '__NO_PUNY__') {
@@ -2552,9 +2058,6 @@ function filterDomains() {
                 if (isPuny) {
                     tagMatch = false;
                 }
-            } else if (tagFilter === '__BUY_NOW__') {
-                // Already handled in buyNowMatch above
-                tagMatch = true;
             } else {
                 // Regular tag filtering
                 const tags = (domainSpan.dataset.tags || '').split(',').map(t => t.trim());
@@ -2562,7 +2065,7 @@ function filterDomains() {
             }
         }
         
-        item.style.display = (textMatch && priceMatch && buyNowMatch && tagMatch) ? '' : 'none';
+        item.style.display = (textMatch && priceMatch && tagMatch) ? '' : 'none';
     });
 }
 
@@ -2578,9 +2081,6 @@ document.getElementById('clear-filters').addEventListener('click', function() {
     document.getElementById('min-price').value = '';
     document.getElementById('max-price').value = '';
     document.getElementById('tag-filter').value = '';
-    if (buyNowOnlyActive) {
-        toggleBuyNowOnly(); // Turn off buy-now filter
-    }
     filterDomainsWithPagination();
 });
 
@@ -2601,18 +2101,6 @@ function showPage() {
     const items = document.querySelectorAll('.col');
     allVisibleItems = Array.from(items).filter(item => item.style.display !== 'none');
     
-    if (itemsPerPage === Infinity) {
-        // Show all visible items
-        allVisibleItems.forEach(item => {
-            item.style.display = '';
-        });
-        document.getElementById('prev-page').disabled = true;
-        document.getElementById('next-page').disabled = true;
-        document.getElementById('page-info').textContent = `Showing all ${allVisibleItems.length} names`;
-        document.getElementById('go-to-page').disabled = true;
-        return;
-    }
-    
     const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
@@ -2631,17 +2119,10 @@ function showPage() {
     
     // Update pagination controls
     document.getElementById('prev-page').disabled = currentPage === 1;
-    document.getElementById('next-page').disabled = currentPage >= totalPages;
-    
-    // Enhanced page info with item range
-    const displayStart = allVisibleItems.length > 0 ? start + 1 : 0;
-    const displayEnd = Math.min(end, allVisibleItems.length);
-    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages} (showing ${displayStart}-${displayEnd} of ${allVisibleItems.length})`;
-    
-    // Update go-to-page input
-    const goToPageInput = document.getElementById('go-to-page');
-    goToPageInput.max = totalPages;
-    goToPageInput.disabled = false;
+    document.getElementById('next-page').disabled = currentPage >= totalPages || itemsPerPage === Infinity;
+    document.getElementById('page-info').textContent = itemsPerPage === Infinity ? 
+        `Showing all ${allVisibleItems.length} names` : 
+        `Page ${currentPage} of ${totalPages} (${allVisibleItems.length} names)`;
 }
 
 function filterDomainsWithPagination() {
@@ -2651,32 +2132,6 @@ function filterDomainsWithPagination() {
 }
 
 document.getElementById('per-page').addEventListener('change', updatePagination);
-
-function goToPage() {
-    const input = document.getElementById('go-to-page');
-    const page = parseInt(input.value);
-    const totalPages = Math.ceil(allVisibleItems.length / itemsPerPage);
-    
-    if (page >= 1 && page <= totalPages) {
-        currentPage = page;
-        showPage();
-        window.scrollTo(0, 0);
-    } else if (page > totalPages && totalPages > 0) {
-        // Jump to last page if input exceeds total
-        currentPage = totalPages;
-        showPage();
-        window.scrollTo(0, 0);
-        input.value = totalPages;
-    }
-}
-
-// Allow Enter key to trigger Go to page
-document.getElementById('go-to-page').addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-        goToPage();
-    }
-});
-
 document.getElementById('prev-page').addEventListener('click', function() {
     if (currentPage > 1) {
         currentPage--;
@@ -2694,8 +2149,8 @@ document.getElementById('next-page').addEventListener('click', function() {
 });
 
 // Initialize - show all domains with pagination
-currentPage = 1;
-filterDomainsWithPagination();
+filterDomains();
+showPage();
 </script>"""
     
     def process_pagemaker(self):
