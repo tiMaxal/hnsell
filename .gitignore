@@ -19,3 +19,4 @@ ai_hist_hnsell/*
 !ai_hist_hnsell/ai-hist_hns-puny+pagemake.md
 /.vscode
 ai-hist_hnsell/hnsell_portfolio-hist.7z
+/.aiccounts
