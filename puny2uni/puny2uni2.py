@@ -54,7 +54,7 @@ class Puny2UniConverter:
             self.translator = GoogleTranslator(source='auto', target='en')
     
     def detect_csv_source(self, filepath):
-        """Detect CSV source format (bob-tr, bob-tld, nb-tr, nb-tld, ss-tr, ss-tld, fw)"""
+        """Detect CSV source format (bob-tr, bob-tld, nb-tr, nb-tld, ss-tr, ss-tld, fw, hsd-truth)"""
         if not CSV_AVAILABLE:
             return 'unknown'
         
@@ -64,6 +64,11 @@ class Puny2UniConverter:
             headers_lower = [h.lower() for h in headers]
             
             # Each format uses ONLY ONE unique identifier for efficiency
+            # Canonical HSD truth file: domain + wallet_id schema
+            if 'domain' in headers_lower and 'wallet_id' in headers_lower and (
+                'ownership_status' in headers_lower or 'first_seen' in headers_lower
+            ):
+                return 'hsd-truth'
             # Namebase Transactions: extra.domain (dot notation) is UNIQUE
             if 'extra.domain' in headers:
                 return 'nb-tr'
@@ -361,7 +366,7 @@ class Puny2UniConverter:
         
         return tags
     
-    def generate_description(self, unicode_str, validation_tag):
+    def convert_domain(self, domain, translate=False, target_lang='en', verbose=True):
         """Convert a single domain and optionally translate"""
         domain = domain.strip()
         
@@ -810,6 +815,8 @@ class Puny2UniConverter:
             return headers_lower.get('name', None)
         elif source_type in ['bob-tld', 'bob-tr']:
             return headers_lower.get('domains', None)
+        elif source_type == 'hsd-truth':
+            return headers_lower.get('domain', None)
         elif source_type == 'fw':
             # Firewallet uses 'name' or first column
             return headers_lower.get('name', df.columns[0] if len(df.columns) > 0 else None)

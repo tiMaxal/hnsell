@@ -98,7 +98,7 @@ example,100.0,ACTIVE
 xn--e1afmkfd,250.0,ACTIVE
 ```
 
-### Shakestation TLD
+### Shakestation TLD [RETIRED]
 ```csv
 domain,for_sale,price,description
 example,TRUE,100.0,Example domain

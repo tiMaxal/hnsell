@@ -1,0 +1,16 @@
+{
+  "network": "main",
+  "host": "127.0.0.1",
+  "port": "12039",
+  "persist_secrets": false,
+  "api_key": "",
+  "token": "",
+  "pm_email_base": "h4ndsh4k@gmail.com",
+  "output_csv": "E:\\STORE\\app2MULT\\app_hns\\hns_walletx\\hns_csv-mng\\hns_puny+pagemaker\\hnsell\\csv-s\\csv-bob\\csv_bob-tld\\hns_bob_tlds.csv",
+  "truth_csv": "E:\\STORE\\app2MULT\\app_hns\\hns_walletx\\hns_csv-mng\\hns_puny+pagemaker\\hnsell\\csv-s\\csv-hsd\\hns_hsd_sales_truth.csv",
+  "pm_truth": "E:\\STORE\\app2MULT\\app_hns\\hns_walletx\\hns_csv-mng\\hns_puny+pagemaker\\hnsell\\csv-s\\csv-hsd\\hns_hsd_sales_truth.csv",
+  "pm_output": "E:\\STORE\\app2MULT\\app_hns\\hns_walletx\\hns_csv-mng\\hns_puny+pagemaker\\hnsell\\csv-s\\csv-hsd\\hns_hsd_sales_truth.pagemaker.csv",
+  "manager_csv": "E:\\STORE\\app2MULT\\app_hns\\hns_walletx\\hns_csv-mng\\hns_puny+pagemaker\\hnsell\\csv-s\\csv-hsd\\hns_hsd_sales_truth.csv",
+  "auto_finalize_height": "",
+  "auto_finalize_dry_run": true
+}

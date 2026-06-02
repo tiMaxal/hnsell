@@ -382,7 +382,12 @@ class PageMakerApp:
                             'tags': row.get('tags', 'All Names'),
                             'source': 'ss',
                             'email': row.get('email', ''),
-                            'price': row.get('price', '')
+                            'price': row.get('price', ''),
+                            'swap_state': row.get('swap_state', ''),
+                            'proof_hash': row.get('proof_hash', ''),
+                            'fill_expires_at': row.get('fill_expires_at', ''),
+                            'fill_disclosures': row.get('fill_disclosures', ''),
+                            'fill_requires_ack': row.get('fill_requires_ack', 'True')
                         })
                 
                 elif source_type == 'ss-tr':
@@ -402,7 +407,12 @@ class PageMakerApp:
                             'tags': row.get('tags', 'All Names'),
                             'source': 'ss',
                             'email': email,
-                            'price': price
+                            'price': price,
+                            'swap_state': row.get('swap_state', ''),
+                            'proof_hash': row.get('proof_hash', ''),
+                            'fill_expires_at': row.get('fill_expires_at', ''),
+                            'fill_disclosures': row.get('fill_disclosures', ''),
+                            'fill_requires_ack': row.get('fill_requires_ack', 'True')
                         })
                 
                 elif source_type in ['nb-tld', 'nb-tr']:
@@ -422,7 +432,12 @@ class PageMakerApp:
                             'tags': row.get('tags', 'All Names'),
                             'source': 'nb',
                             'email': email,
-                            'price': price
+                            'price': price,
+                            'swap_state': row.get('swap_state', ''),
+                            'proof_hash': row.get('proof_hash', ''),
+                            'fill_expires_at': row.get('fill_expires_at', ''),
+                            'fill_disclosures': row.get('fill_disclosures', ''),
+                            'fill_requires_ack': row.get('fill_requires_ack', 'True')
                         })
                 
                 elif source_type == 'bob-tld':
@@ -457,7 +472,12 @@ class PageMakerApp:
                                 'tags': row.get('tags', 'All Names'),
                                 'source': 'bob',
                                 'email': email,
-                                'price': price
+                                'price': price,
+                                'swap_state': row.get('swap_state', ''),
+                                'proof_hash': row.get('proof_hash', ''),
+                                'fill_expires_at': row.get('fill_expires_at', ''),
+                                'fill_disclosures': row.get('fill_disclosures', ''),
+                                'fill_requires_ack': row.get('fill_requires_ack', 'True')
                             })
                     if not has_email_or_price and not self.list_all_var.get():
                         bob_fw_without_contact.append(os.path.basename(filepath))
@@ -516,7 +536,12 @@ class PageMakerApp:
                                 'tags': row.get('tags', 'All Names'),
                                 'source': 'fw',
                                 'email': email,
-                                'price': price
+                                'price': price,
+                                'swap_state': row.get('swap_state', ''),
+                                'proof_hash': row.get('proof_hash', ''),
+                                'fill_expires_at': row.get('fill_expires_at', ''),
+                                'fill_disclosures': row.get('fill_disclosures', ''),
+                                'fill_requires_ack': row.get('fill_requires_ack', 'True')
                             })
                     if not has_email_or_price and not self.list_all_var.get():
                         bob_fw_without_contact.append(os.path.basename(filepath))
@@ -577,6 +602,21 @@ class PageMakerApp:
                 tags_dict[tag].append(self.format_domain_link(row, include_descriptions))
         
         tags_sorted = ['All Names'] + sorted(set(tags_dict.keys()) - {'All Names'})
+
+        disclosure_seed = ''
+        for _, row in df.iterrows():
+            d = str(row.get('fill_disclosures', '') or '').strip()
+            if d:
+                disclosure_seed = d
+                break
+        if not disclosure_seed:
+            disclosure_seed = (
+                'Funding wallet must have sufficient balance for fill amount and fees. | '
+                'After signing fill, funds remain locked until finalize or timeout path executes. | '
+                'Fill is irreversible once signed and broadcast; there is no cancel path.'
+            )
+        disclosure_lines = [x.strip() for x in disclosure_seed.split('|') if x.strip()]
+        fill_notice_html = '<div class="swap-notice"><strong>Swap Fill Notice:</strong><ul>' + ''.join(f'<li>{line}</li>' for line in disclosure_lines) + '</ul></div>'
         
         # Build single grid with all domains (no sections)
         all_names_html = ''.join(f'<div class="col">{name}</div>' for tag in tags_sorted for name in tags_dict[tag])
@@ -643,11 +683,11 @@ class PageMakerApp:
     <a href="https://shakeshift.com/names" target="_blank" rel="noreferrer">ShakeShift</a>
     <a href="https://bobwallet.io" target="_blank" rel="noreferrer">bobWallet</a>
     <a href="https://www.namebase.io" target="_blank" rel="noreferrer">Namebase</a>
-    <a href="https://shakestation.io" target="_blank" rel="noreferrer">ShakeStation</a>
     <a href="https://impervious.com/fingertip" target="_blank" rel="noreferrer">Fingertip</a>
     <a href="https://git.woodburn.au/nathanwoodburn/firewalletbrowser" target="_blank" rel="noreferrer">Firewallet</a>
 </div>
 <div class="filter-controls">
+    {fill_notice_html}
     <div class="search-container">
         <input type="text" id="search-input" placeholder="Search names...">
         <input type="number" id="min-price" placeholder="Min price" step="0.01">
@@ -695,6 +735,11 @@ class PageMakerApp:
         tags = row.get('tags', '')
         descript = str(row.get('descript-IDNA', ''))
         translate = str(row.get('translate-IDNA', ''))
+        swap_state = str(row.get('swap_state', '') or '').strip()
+        proof_hash = str(row.get('proof_hash', '') or '').strip()
+        fill_expires_at = str(row.get('fill_expires_at', '') or '').strip()
+        fill_disclosures = str(row.get('fill_disclosures', '') or '').strip()
+        fill_requires_ack = str(row.get('fill_requires_ack', 'True') or 'True').strip()
         
         if isinstance(email, float) and math.isnan(email): email = ''
         if isinstance(price, float) and math.isnan(price): price = ''
@@ -741,9 +786,21 @@ class PageMakerApp:
             
             if contact_parts_formatted:
                 html_parts.append(f'<div class="domain-contact">{" ".join(contact_parts_formatted)}</div>')
+
+            if proof_hash:
+                esc_domain = name.replace("'", "&#39;").replace('"', '&quot;')
+                esc_proof = proof_hash.replace("'", "&#39;").replace('"', '&quot;')
+                esc_disclosures = fill_disclosures.replace("'", "&#39;").replace('"', '&quot;')
+                esc_fill_exp = fill_expires_at.replace("'", "&#39;").replace('"', '&quot;')
+                fill_btn = (
+                    f'<button class="fill-intent-btn" '
+                    f'onclick="beginFill(event, \"{esc_domain}\", \"{esc_proof}\", \"{esc_disclosures}\", \"{esc_fill_exp}\", \"{fill_requires_ack}\")" '
+                    f'title="Prepare fill intent">fill</button>'
+                )
+                html_parts.append(f'<div class="domain-contact">{fill_btn}</div>')
             
             is_puny = "true" if name.startswith('xn--') else "false"
-            return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}">' + ''.join(html_parts) + '</span>'
+            return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}" data-swap-state="{swap_state}" data-proof-hash="{proof_hash}" data-fill-expires-at="{fill_expires_at}" data-fill-requires-ack="{fill_requires_ack}">' + ''.join(html_parts) + '</span>'
         else:
             base_url = f"https://www.namebase.io/domains/{name}"
         
@@ -781,7 +838,7 @@ class PageMakerApp:
             html_parts.append(f'<div class="domain-contact">{" ".join(contact_parts_formatted)}</div>')
         
         is_puny = "true" if name.startswith('xn--') else "false"
-        return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}">' + ''.join(html_parts) + '</span>'
+        return f'<span class="domain-with-contact" data-price="{price}" data-email="{email}" data-tags="{tags}" data-puny="{is_puny}" data-swap-state="{swap_state}" data-proof-hash="{proof_hash}" data-fill-expires-at="{fill_expires_at}" data-fill-requires-ack="{fill_requires_ack}">' + ''.join(html_parts) + '</span>'
 
     
     def get_portfolio_css(self):
@@ -977,6 +1034,31 @@ input {
 .copy-email-btn:hover {
     background-color: rgba(97, 0, 255, 0.6);
     transform: scale(1.1);
+}
+.fill-intent-btn {
+    padding: 0.2em 0.5em;
+    margin-left: 0.3em;
+    background-color: rgba(26, 138, 64, 0.75);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+.fill-intent-btn:hover {
+    transform: scale(1.08);
+}
+.swap-notice {
+    margin: 0.7em auto 0.4em auto;
+    max-width: 960px;
+    text-align: left;
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    padding: 0.6em 0.9em;
+    background: rgba(111, 111, 111, 0.12);
+}
+.swap-notice ul {
+    margin: 0.35em 0 0 1.2em;
 }
 .email-link {
     color: inherit;
@@ -1401,6 +1483,35 @@ body.black-theme .search-container button:hover {{
     transform: scale(1.1);
 }}
 
+.fill-intent-btn {{
+    padding: 0.2em 0.5em;
+    margin-left: 0.3em;
+    background-color: rgba(26, 138, 64, 0.75);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}}
+
+.fill-intent-btn:hover {{
+    transform: scale(1.08);
+}}
+
+.swap-notice {{
+    margin: 0.7em auto 0.4em auto;
+    max-width: 960px;
+    text-align: left;
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    padding: 0.6em 0.9em;
+    background: rgba(111, 111, 111, 0.12);
+}}
+
+.swap-notice ul {{
+    margin: 0.35em 0 0 1.2em;
+}}
+
 body.dark-theme .copy-email-btn {{
     background-color: rgba(153, 221, 255, 0.15);
 }}
@@ -1575,6 +1686,50 @@ function copyEmail(event, email) {
         btn.textContent = '✓';
         setTimeout(() => { btn.textContent = originalText; }, 1000);
     });
+}
+
+function beginFill(event, domain, proofHash, disclosures, fillExpiresAt, fillRequiresAck) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const requiresAck = String(fillRequiresAck || 'True').toLowerCase() !== 'false';
+    const lines = String(disclosures || '').split('|').map(s => s.trim()).filter(Boolean);
+
+    if (requiresAck) {
+        for (const line of lines) {
+            const ok = window.confirm(`Fill acknowledgment required:\n\n${line}\n\nProceed?`);
+            if (!ok) {
+                return;
+            }
+        }
+    }
+
+    const recipient = window.prompt('Recipient HNS address for name transfer:', '');
+    if (!recipient) return;
+    const fundingWallet = window.prompt('Funding wallet identifier (for your records):', '');
+    if (fundingWallet === null) return;
+
+    const payload = {
+        intent: 'swap_fill',
+        domain: domain,
+        proof_hash: proofHash,
+        recipient_address: recipient,
+        funding_wallet: fundingWallet,
+        fill_expires_at: fillExpiresAt || '',
+        requires_ack: requiresAck,
+        acknowledged_disclosures: lines,
+    };
+
+    const text = JSON.stringify(payload, null, 2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Fill intent copied to clipboard. Submit it to your swap fill endpoint.');
+        }).catch(() => {
+            alert(text);
+        });
+        return;
+    }
+    alert(text);
 }
 
 function filterDomains() {
@@ -1812,6 +1967,50 @@ function copyEmail(event, email) {
         btn.textContent = '✓';
         setTimeout(() => { btn.textContent = originalText; }, 1000);
     });
+}
+
+function beginFill(event, domain, proofHash, disclosures, fillExpiresAt, fillRequiresAck) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const requiresAck = String(fillRequiresAck || 'True').toLowerCase() !== 'false';
+    const lines = String(disclosures || '').split('|').map(s => s.trim()).filter(Boolean);
+
+    if (requiresAck) {
+        for (const line of lines) {
+            const ok = window.confirm(`Fill acknowledgment required:\n\n${line}\n\nProceed?`);
+            if (!ok) {
+                return;
+            }
+        }
+    }
+
+    const recipient = window.prompt('Recipient HNS address for name transfer:', '');
+    if (!recipient) return;
+    const fundingWallet = window.prompt('Funding wallet identifier (for your records):', '');
+    if (fundingWallet === null) return;
+
+    const payload = {
+        intent: 'swap_fill',
+        domain: domain,
+        proof_hash: proofHash,
+        recipient_address: recipient,
+        funding_wallet: fundingWallet,
+        fill_expires_at: fillExpiresAt || '',
+        requires_ack: requiresAck,
+        acknowledged_disclosures: lines,
+    };
+
+    const text = JSON.stringify(payload, null, 2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Fill intent copied to clipboard. Submit it to your swap fill endpoint.');
+        }).catch(() => {
+            alert(text);
+        });
+        return;
+    }
+    alert(text);
 }
 
 function showTagSection(tag) {

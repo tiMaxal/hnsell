@@ -1,8 +1,0 @@
-domain,coin,action,date,amount,txid
-example,HNS,REGISTER,2024-01-15,5.5,tx_abc123def456
-xn--e1afmkfd,HNS,TRANSFER,2024-01-16,0,tx_def456ghi789
-testdomain,HNS,RENEW,2024-01-17,2.0,tx_ghi789jkl012
-xn--wgbh1c,HNS,REGISTER,2024-01-18,7.25,tx_jkl012mno345
-demo-name,HNS,UPDATE,2024-01-19,0,tx_mno345pqr678
-myname,HNS,REGISTER,2024-01-20,6.0,tx_pqr678stu901
-xn--mgbaam7a8h,HNS,TRANSFER,2024-01-21,0,tx_stu901vwx234
